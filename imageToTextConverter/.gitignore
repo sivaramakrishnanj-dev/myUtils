@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Keep data directory structure but not the contents
+data/input/*
+data/output/*
+data/merged_output/*
+!data/input/.gitkeep
+!data/output/.gitkeep
+!data/merged_output/.gitkeep

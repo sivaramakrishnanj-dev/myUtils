@@ -1,0 +1,41 @@
+python ocr_converter.py image.png -o results.md
+2.  **Logic:**
+* It uses `pytesseract.image_to_data` instead of just `image_to_string`. This gives us the pixel height of every word.
+* It calculates the **Median Height** of all words to find the "body text" size.
+* It groups words into lines.
+* If a line's text is significantly larger (e.g., 1.3x or 1.8x) than the median, it prepends `#` or `##` to make it a Markdown header.
+
+
+
+##################
+
+#Note: this needs activate before start and deactivate after it completes
+source .venv/bin/activate
+deactivate
+
+# Sort by name (default)
+python ocr_converter_bulk.py ./my_images ./my_output_text
+
+# Sort by timestamp
+python ocr_converter_bulk.py ./my_images ./my_output_text --sort time
+
+
+#################
+
+
+Usage:
+bash
+python merge_files.py <folder_path> <output_file>
+
+
+Example:
+bash
+python merge_files.py ./my_folder merged_output.txt
+
+######Handy examples#######
+python3 merge_files.py /Users/sivarj/my/scripts/ocr/data/output /Users/sivarj/my/scripts/ocr/data/merged_output/mental_model_ch01.md
+
+
+python3 ocr_converter_bulk.py /Users/sivarj/my/scripts/ocr/data/input /Users/sivarj/my/scripts/ocr/data/output --sort time
+
+#########################
