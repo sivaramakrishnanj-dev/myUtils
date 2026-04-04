@@ -25,11 +25,13 @@ public class TaskCli implements Runnable {
         @CommandLine.Parameters(index = "0", description = "Task title") String title;
         @Option(names = "--due", description = "Due date/time (ISO-8601)") String due;
         @Option(names = "--tags", description = "Comma-separated tags", split = ",") java.util.List<String> tags;
+        @Option(names = "--priority", description = "Priority (LOW, MEDIUM, HIGH, URGENT)") String priority;
+        @Option(names = "--notes", description = "Notes") String notes;
 
         @Override
         public void run() {
             try {
-                Task t = parent.dao().add(title, due, tags != null ? tags : java.util.List.of());
+                Task t = parent.dao().add(title, due, tags != null ? tags : java.util.List.of(), priority, notes);
                 System.out.println(t.toJson());
             } catch (Exception e) { System.err.println("Error: " + e.getMessage()); }
         }
@@ -42,11 +44,12 @@ public class TaskCli implements Runnable {
         @Option(names = "--tag", description = "Filter by tag") String tag;
         @Option(names = "--due-before", description = "Filter tasks due before (inclusive)") String dueBefore;
         @Option(names = "--due-after", description = "Filter tasks due after (inclusive)") String dueAfter;
+        @Option(names = "--priority", description = "Filter by priority (LOW, MEDIUM, HIGH, URGENT)") String priority;
 
         @Override
         public void run() {
             try {
-                var tasks = parent.dao().list(status, tag, dueBefore, dueAfter);
+                var tasks = parent.dao().list(status, tag, dueBefore, dueAfter, priority);
                 System.out.println("[" + tasks.stream().map(Task::toJson).reduce((a, b) -> a + "," + b).orElse("") + "]");
             } catch (Exception e) { System.err.println("Error: " + e.getMessage()); }
         }
@@ -70,14 +73,17 @@ public class TaskCli implements Runnable {
     static class Update implements Runnable {
         @CommandLine.ParentCommand TaskCli parent;
         @CommandLine.Parameters(index = "0", description = "Task ID") int id;
+        @Option(names = "--title", description = "New title") String title;
         @Option(names = "--status", description = "New status") String status;
         @Option(names = "--due", description = "New due date/time") String due;
         @Option(names = "--tags", description = "Replace tags (comma-separated)", split = ",") java.util.List<String> tags;
+        @Option(names = "--priority", description = "New priority (LOW, MEDIUM, HIGH, URGENT)") String priority;
+        @Option(names = "--notes", description = "New notes") String notes;
 
         @Override
         public void run() {
             try {
-                Task t = parent.dao().update(id, status, due, tags);
+                Task t = parent.dao().update(id, title, status, due, tags, priority, notes);
                 System.out.println(t == null ? "{\"error\":\"Task not found\"}" : t.toJson());
             } catch (Exception e) { System.err.println("Error: " + e.getMessage()); }
         }

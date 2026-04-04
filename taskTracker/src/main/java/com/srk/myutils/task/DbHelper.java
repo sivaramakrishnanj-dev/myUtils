@@ -27,10 +27,15 @@ public class DbHelper {
                     id         INTEGER PRIMARY KEY AUTOINCREMENT,
                     title      TEXT NOT NULL,
                     status     TEXT NOT NULL DEFAULT 'TODO',
+                    priority   TEXT NOT NULL DEFAULT 'MEDIUM',
                     due_at     TEXT,
+                    notes      TEXT,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 )""");
+            // migrate existing DBs
+            try { stmt.execute("ALTER TABLE tasks ADD COLUMN priority TEXT NOT NULL DEFAULT 'MEDIUM'"); } catch (SQLException ignored) {}
+            try { stmt.execute("ALTER TABLE tasks ADD COLUMN notes TEXT"); } catch (SQLException ignored) {}
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS task_tags (
                     task_id INTEGER NOT NULL,

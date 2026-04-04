@@ -1,6 +1,6 @@
 # Task Tracker CLI
 
-A lightweight CLI task tracker built with Java, SQLite, and Picocli. Designed to be stateless per invocation — each run connects to a local SQLite DB file, performs the operation, and exits.
+A lightweight CLI task tracker built with Java, SQLite, and Picocli. Stateless per invocation — each run connects to a local SQLite DB file, performs the operation, and exits.
 
 ## Build
 
@@ -19,7 +19,7 @@ alias task="java -jar /path/to/task-tracker-1.0.0.jar"
 ### Add a task
 
 ```bash
-task add "Fix login bug" --due "2026-04-10T17:00" --tags "backend,urgent"
+task add "Fix login bug" --due "2026-04-10T17:00" --tags "backend,urgent" --priority HIGH --notes "Blocks release"
 ```
 
 ### List tasks
@@ -28,6 +28,7 @@ task add "Fix login bug" --due "2026-04-10T17:00" --tags "backend,urgent"
 task list                                        # all tasks
 task list --status TODO                          # by status (TODO, IN_PROGRESS, DONE)
 task list --tag "backend"                        # by tag
+task list --priority URGENT                      # by priority (LOW, MEDIUM, HIGH, URGENT)
 task list --due-before "2026-04-10T00:00"        # due on or before
 task list --due-after "2026-04-05T00:00"         # due on or after
 task list --status TODO --tag "urgent"           # combine filters
@@ -43,7 +44,10 @@ task get 1
 
 ```bash
 task update 1 --status DONE
+task update 1 --title "New title"
 task update 1 --due "2026-04-12T10:00"
+task update 1 --priority LOW
+task update 1 --notes "Completed via slack-companion"
 task update 1 --tags "backend,p1"                # replaces all tags
 ```
 
