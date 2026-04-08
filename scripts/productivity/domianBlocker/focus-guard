@@ -1,0 +1,321 @@
+#!/bin/bash
+# focus-guard — Block/unblock distracting domains with friction
+# Blocking is instant. Unblocking requires reflection + 1-hour math gauntlet.
+
+HOSTS="/etc/hosts"
+MARKER="# FOCUS-GUARD"
+ROUND_DELAY=900  # 15 minutes per round
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+if [[ $EUID -ne 0 ]]; then
+  echo -e "${RED}Run with sudo:${NC} sudo focus-guard $*"
+  exit 1
+fi
+
+usage() {
+  echo -e "${BOLD}Usage:${NC}"
+  echo "  sudo focus-guard block <domain>    — Block immediately"
+  echo "  sudo focus-guard unblock <domain>  — Unblock (1-hour gauntlet)"
+  echo "  sudo focus-guard list              — Show blocked domains"
+}
+
+flush_dns() {
+  dscacheutil -flushcache 2>/dev/null
+  killall -HUP mDNSResponder 2>/dev/null
+}
+
+lock_hosts()   { chflags schg   "$HOSTS"; }
+unlock_hosts() { chflags noschg "$HOSTS"; }
+
+ask_and_require_answer() {
+  local question="$1"
+  local answer=""
+  echo ""
+  echo -e "${CYAN}$question${NC}"
+  while [[ -z "$answer" ]]; do
+    read -r -p "→ " answer
+  done
+  echo ""
+}
+
+digit_sum() {
+  local n="${1#-}"  # strip sign
+  local sum=0
+  while [[ ${#n} -gt 0 ]]; do
+    sum=$((sum + ${n: -1}))
+    n="${n%?}"
+  done
+  echo "$sum"
+}
+
+run_timer() {
+  local seconds=$1
+  local label=$2
+  echo -e "${YELLOW}  ⏳ $label — ${BOLD}$((seconds/60)) minutes${NC}${YELLOW}. Close terminal to cancel.${NC}"
+  echo ""
+  for i in $(seq "$seconds" -1 1); do
+    printf "\r  ⏳ Time remaining: %02d:%02d " $((i/60)) $((i%60))
+    sleep 1
+  done
+  echo ""
+  echo ""
+}
+
+block_domain() {
+  local domain="$1"
+  if grep -q "$MARKER:$domain" "$HOSTS" 2>/dev/null; then
+    echo -e "${YELLOW}$domain is already blocked.${NC}"
+    exit 0
+  fi
+  unlock_hosts
+  [[ -s "$HOSTS" && $(tail -c1 "$HOSTS" | wc -l) -eq 0 ]] && echo "" >> "$HOSTS"
+  echo "127.0.0.1  $domain $MARKER:$domain" >> "$HOSTS"
+  echo "127.0.0.1  www.$domain $MARKER:$domain" >> "$HOSTS"
+  flush_dns
+  lock_hosts
+  echo -e "${GREEN}✅ Blocked ${BOLD}$domain${NC}${GREEN} immediately. Stay focused!${NC}"
+}
+
+unblock_domain() {
+  local domain="$1"
+  if ! grep -q "$MARKER:$domain" "$HOSTS" 2>/dev/null; then
+    echo -e "${YELLOW}$domain is not currently blocked.${NC}"
+    exit 0
+  fi
+
+  local restart_count=0
+
+  while true; do
+    # ── Full restart header ────────────────────────────────────────────────
+    echo ""
+    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    if [[ $restart_count -gt 0 ]]; then
+      echo -e "${RED}  🔁 RESTART #${restart_count} — You failed the gauntlet.${NC}"
+      echo -e "${RED}  Round 1 timer is now $((15 + restart_count * 5)) minutes.${NC}"
+    else
+      echo -e "${RED}  ⚠️  You are about to unblock: ${BOLD}$domain${NC}"
+    fi
+    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    # ── Phase 0: Reflection questions ─────────────────────────────────────
+    echo -e "${YELLOW}Answer these honestly before the timer starts:${NC}"
+    ask_and_require_answer "1. What specific, productive task requires $domain right now?"
+    ask_and_require_answer "2. Can this wait until your next scheduled break? If not, why?"
+    ask_and_require_answer "3. Is this a genuine need or a dopamine craving? Be brutally honest."
+    ask_and_require_answer "4. Name the last 3 things you accomplished today before this urge hit."
+    ask_and_require_answer "5. What will you lose — in focus, time, and self-respect — if you open $domain right now?"
+
+    # ── Phase 0: Number challenge ──────────────────────────────────────────
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}  🔢 MEMORY CHALLENGE${NC}"
+    echo -e "${CYAN}  Enter a number between 50,000,000,000 and 250,000,000,000${NC}"
+    echo -e "${CYAN}  that is divisible by 7. Your input will not be shown.${NC}"
+    echo -e "${CYAN}  Memorize it — you will need it for the next hour.${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    local N=""
+    while true; do
+      read -s -r -p "→ " N
+      echo ""
+      if [[ "$N" =~ ^[0-9]+$ ]] && \
+         [[ $N -ge 50000000000 ]] && \
+         [[ $N -le 250000000000 ]] && \
+         [[ $((N % 7)) -eq 0 ]]; then
+        break
+      fi
+      echo -e "${RED}  Invalid. Try again.${NC}"
+    done
+    echo -e "${GREEN}  ✓ Number accepted. Memorize it — it will never be shown again.${NC}"
+    echo ""
+
+    # ── Round 1 timer (15 min + 5 min per restart) ────────────────────────
+    local r1_delay=$(( ROUND_DELAY + restart_count * 300 ))
+    run_timer "$r1_delay" "Round 1 of 4"
+
+    # ── Round 1 math: N / 7 (2 attempts) ──────────────────────────────────
+    local R1=$((N / 7))
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}  🧮 ROUND 1 MATH — 2 attempts${NC}"
+    echo -e "${CYAN}  Divide your number by 7. Enter the result.${NC}"
+    echo -e "${CYAN}  (Your input will not be shown)${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    local passed=false
+    for attempt in 1 2; do
+      local ans=""
+      read -s -r -p "  Attempt $attempt/2 → " ans
+      echo ""
+      if [[ "$ans" == "$R1" ]]; then
+        passed=true
+        break
+      fi
+      [[ $attempt -lt 2 ]] && echo -e "${RED}  Wrong. One more attempt.${NC}"
+    done
+
+    if ! $passed; then
+      restart_count=$((restart_count + 1))
+      echo ""
+      echo -e "${RED}  ✗ Incorrect. Restarting. [Restart #${restart_count}]${NC}"
+      sleep 2
+      continue
+    fi
+
+    echo -e "${GREEN}  ✓ Correct. Memorize this result — it will not be shown again.${NC}"
+    echo ""
+
+    # ── Round 2 timer ─────────────────────────────────────────────────────
+    run_timer "$ROUND_DELAY" "Round 2 of 4"
+
+    # ── Round 2 math: digit_sum(R1) × 13 (1 attempt) ─────────────────────
+    local ds
+    ds=$(digit_sum "$R1")
+    local R2=$((ds * 13))
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}  🧮 ROUND 2 MATH — 1 attempt${NC}"
+    echo -e "${CYAN}  Sum all digits of your result, then multiply that sum by 13.${NC}"
+    echo -e "${CYAN}  Enter the final answer. (Input hidden)${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    local ans2=""
+    read -s -r -p "  → " ans2
+    echo ""
+
+    if [[ "$ans2" != "$R2" ]]; then
+      restart_count=$((restart_count + 1))
+      echo -e "${RED}  ✗ Incorrect. Restarting. [Restart #${restart_count}]${NC}"
+      sleep 2
+      continue
+    fi
+
+    echo -e "${GREEN}  ✓ Correct. Memorize this result — it will not be shown again.${NC}"
+    echo ""
+
+    # ── Round 3 timer ─────────────────────────────────────────────────────
+    run_timer "$ROUND_DELAY" "Round 3 of 4"
+
+    # ── Round 3 math: (R2 × R2) mod 97 (1 attempt) ───────────────────────
+    local R3=$(( (R2 * R2) % 97 ))
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}  🧮 ROUND 3 MATH — 1 attempt${NC}"
+    echo -e "${CYAN}  Square your result, then take modulo 97.${NC}"
+    echo -e "${CYAN}  Enter the final answer. (Input hidden)${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    local ans3=""
+    read -s -r -p "  → " ans3
+    echo ""
+
+    if [[ "$ans3" != "$R3" ]]; then
+      restart_count=$((restart_count + 1))
+      echo -e "${RED}  ✗ Incorrect. Restarting. [Restart #${restart_count}]${NC}"
+      sleep 2
+      continue
+    fi
+
+    echo -e "${GREEN}  ✓ Correct. Memorize this result — it will not be shown again.${NC}"
+    echo ""
+
+    # ── Round 4 timer ─────────────────────────────────────────────────────
+    run_timer "$ROUND_DELAY" "Round 4 of 4 — Final"
+
+    # ── Round 4 math: (R3 × 7 + R3²) mod 53 — 1 attempt, 60-sec limit ───
+    local R4=$(( (R3 * 7 + R3 * R3) % 53 ))
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}  🧮 ROUND 4 MATH — 1 attempt — ⏱ 60 SECONDS${NC}"
+    echo -e "${CYAN}  Multiply your result by 7, add the square of your result,${NC}"
+    echo -e "${CYAN}  then take modulo 53. Enter the answer. (Input hidden)${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    local ans4=""
+    read -s -t 60 -r -p "  → " ans4
+    local read_status=$?
+    echo ""
+
+    if [[ $read_status -ne 0 ]] || [[ "$ans4" != "$R4" ]]; then
+      restart_count=$((restart_count + 1))
+      if [[ $read_status -ne 0 ]]; then
+        echo -e "${RED}  ✗ Time's up. Restarting. [Restart #${restart_count}]${NC}"
+      else
+        echo -e "${RED}  ✗ Incorrect. Restarting. [Restart #${restart_count}]${NC}"
+      fi
+      sleep 2
+      continue
+    fi
+
+    echo -e "${GREEN}  ✓ Correct. Gauntlet complete.${NC}"
+    echo ""
+    break
+  done
+
+  # ── Final reflection ───────────────────────────────────────────────────
+  echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${RED}  ⏰ One hour has passed. Final reckoning:${NC}"
+  echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo ""
+
+  ask_and_require_answer "6. You waited over an hour. Write down exactly what you will do on $domain and for how long — be specific."
+  ask_and_require_answer "7. What is the single most important task you are abandoning right now to open $domain? Is it worth it?"
+  ask_and_require_answer "8. If your future self — 5 years from now — could see this moment, what would they say to you?"
+
+  echo -e "${RED}${BOLD}Final confirmation — type the full sentence exactly:${NC}"
+  echo -e "${CYAN}  I am making a conscious choice, not a compulsive one.${NC}"
+  echo ""
+  local confirm=""
+  read -r -p "→ " confirm
+  if [[ "$confirm" != "I am making a conscious choice, not a compulsive one." ]]; then
+    echo ""
+    echo -e "${GREEN}🛡️  Good call. $domain stays blocked. Back to work!${NC}"
+    exit 0
+  fi
+
+  unlock_hosts
+  sed -i '' "/$MARKER:$domain/d" "$HOSTS"
+  flush_dns
+  lock_hosts
+
+  echo ""
+  echo -e "${YELLOW}🔓 $domain is unblocked.${NC}"
+  echo -e "${YELLOW}   Re-block it when done: ${BOLD}sudo focus-guard block $domain${NC}"
+}
+
+list_domains() {
+  local domains
+  domains=$(grep "$MARKER" "$HOSTS" 2>/dev/null | grep -v "^#" | awk '{print $2}' | grep -v '^www\.' | sort -u)
+  if [[ -z "$domains" ]]; then
+    echo -e "${GREEN}No domains currently blocked.${NC}"
+  else
+    echo -e "${BOLD}Currently blocked:${NC}"
+    echo "$domains" | while read -r d; do
+      echo -e "  ${RED}🚫${NC} $d"
+    done
+  fi
+}
+
+case "$1" in
+  block)
+    [[ -z "$2" ]] && { echo "Provide a domain: sudo focus-guard block twitter.com"; exit 1; }
+    block_domain "$2"
+    ;;
+  unblock)
+    [[ -z "$2" ]] && { echo "Provide a domain: sudo focus-guard unblock twitter.com"; exit 1; }
+    unblock_domain "$2"
+    ;;
+  list)
+    list_domains
+    ;;
+  *)
+    usage
+    ;;
+esac
