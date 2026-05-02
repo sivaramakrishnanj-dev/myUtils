@@ -89,7 +89,7 @@ This package is being built spec-first. Phases are gated by review + approval. N
 
 | Phase | Artifact | Status |
 |---|---|---|
-| 1 — Requirements | `00-requirements.md` | in progress (1a **resolved** at `1481921`; 1b draft) |
+| 1 — Requirements | `00-requirements.md` | in progress (1a **resolved** at `1481921`; 1b **resolved** at `d300785`; 1c next) |
 | 2 — Design | `01`–`05`, ADRs | pending |
 | 3 — Formal contracts | `06-formal/` | pending |
 | 4 — Tasks | `07-tasks.md` | pending |
@@ -100,8 +100,8 @@ Within Phase 1 (Requirements), we follow three sub-phases, each individually rev
 | Sub-phase | Contents | Status |
 |---|---|---|
 | 1a | Personas + user stories | **resolved** ([`1481921`](./reviews/2026-05-02-requirements-phase-1a-r1.md)) |
-| 1b | Acceptance criteria (EARS format) | **draft** |
-| 1c | Non-functional requirements | pending |
+| 1b | Acceptance criteria (EARS format) | **resolved** ([`d300785`](./reviews/2026-05-02-requirements-phase-1b-r1.md)) |
+| 1c | Non-functional requirements | in progress |
 
 ## Quick facts
 

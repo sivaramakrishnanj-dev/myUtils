@@ -1,12 +1,12 @@
 ---
 doc: requirements
 last_reviewed: 2026-05-02
-phase: 1b-acceptance-criteria   # 1a-user-stories | 1b-acceptance-criteria | 1c-nfrs | resolved
-status: draft
+phase: 1c-nfrs   # 1a-user-stories | 1b-acceptance-criteria | 1c-nfrs | resolved
+status: in-progress
 phase_1a_approved_in: 1481921
 phase_1a_review: reviews/2026-05-02-requirements-phase-1a-r1.md
-phase_1b_approved_in:
-phase_1b_review:
+phase_1b_approved_in: d300785
+phase_1b_review: reviews/2026-05-02-requirements-phase-1b-r1.md
 phase_1c_approved_in:
 phase_1c_review:
 ---
@@ -20,8 +20,8 @@ Requirements are built in three sub-phases, each reviewed and approved before th
 | Sub-phase | Contents | Status |
 |---|---|---|
 | 1a | Personas + user stories | **resolved** (review: [`1481921`](./reviews/2026-05-02-requirements-phase-1a-r1.md)) |
-| 1b | Acceptance criteria (EARS format) | **draft** (this document) |
-| 1c | Non-functional requirements | pending |
+| 1b | Acceptance criteria (EARS format) | **resolved** (review: [`d300785`](./reviews/2026-05-02-requirements-phase-1b-r1.md)) |
+| 1c | Non-functional requirements | in progress |
 
 > **Scope anchor:** this project is inspired by `yt-dlp` but deliberately covers a tiny subset: one YouTube video URL → video / audio / transcript / thumbnail on local disk. Every other site, feature, and edge case `yt-dlp` supports is out of scope for the MVP.
 

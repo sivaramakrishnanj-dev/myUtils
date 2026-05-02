@@ -20,4 +20,4 @@ Only download content you have the right to download. YouTube's Terms of Service
 
 ## Status
 
-Phase 1b — Requirements (acceptance criteria) **draft**. Phase 1a (user stories) is **resolved** at `1481921`. Code has not started.
+Phase 1c — Requirements (non-functional requirements). Phase 1a (user stories) and Phase 1b (acceptance criteria) are **resolved** at `1481921` and `d300785`. Code has not started.
