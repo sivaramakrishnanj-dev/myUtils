@@ -1,10 +1,10 @@
 ---
 doc: requirements
 last_reviewed: 2026-05-02
-phase: 1a-user-stories   # 1a-user-stories | 1b-acceptance-criteria | 1c-nfrs | resolved
-status: draft
-phase_1a_approved_in:
-phase_1a_review:
+phase: 1b-acceptance-criteria   # 1a-user-stories | 1b-acceptance-criteria | 1c-nfrs | resolved
+status: in-progress
+phase_1a_approved_in: 1481921
+phase_1a_review: reviews/2026-05-02-requirements-phase-1a-r1.md
 phase_1b_approved_in:
 phase_1b_review:
 phase_1c_approved_in:
@@ -19,8 +19,8 @@ Requirements are built in three sub-phases, each reviewed and approved before th
 
 | Sub-phase | Contents | Status |
 |---|---|---|
-| 1a | Personas + user stories | **draft** (this document) |
-| 1b | Acceptance criteria (EARS format) | pending |
+| 1a | Personas + user stories | **resolved** (review: [`1481921`](./reviews/2026-05-02-requirements-phase-1a-r1.md)) |
+| 1b | Acceptance criteria (EARS format) | in progress |
 | 1c | Non-functional requirements | pending |
 
 > **Scope anchor:** this project is inspired by `yt-dlp` but deliberately covers a tiny subset: one YouTube video URL → video / audio / transcript / thumbnail on local disk. Every other site, feature, and edge case `yt-dlp` supports is out of scope for the MVP.
@@ -31,14 +31,14 @@ Requirements are built in three sub-phases, each reviewed and approved before th
 
 youtubeDownloader is a local CLI tool. It has no server, no multi-user session, and no customer-facing API. The personas below are the humans and external systems whose outcomes depend on its correctness — framed from whose perspective a capability matters.
 
-| ID | Persona | Role |
-|---|---|---|
-| P1 | **CLI User (Researcher / Learner)** | A developer, student, journalist, or researcher who runs the tool on their own machine against YouTube URLs they are licensed to download. They want the video, audio, or transcript as local files so they can study, quote, transcribe, remix, or archive the content offline. This is the primary persona. |
-| P2 | **Transcript Consumer** | Someone who downloads a video specifically for its transcript — to feed into an LLM summariser, to search textually, to quote in writing, or to accessibility-caption derived work. Their success depends on the transcript being complete, timestamped when requested, and in a format they can process. |
-| P3 | **Java Library Embedder** | A developer who wants to invoke youtubeDownloader's core functionality from their own Java program (e.g., a personal task-manager that auto-downloads a queued URL, a Discord bot, a batch script). They care about a clean, embeddable API — not a CLI. |
-| P4 | **Maintainer (Future Self)** | The developer (likely the original author, six months later) who has to diagnose why the tool suddenly fails because YouTube changed something. They care about clear error messages, source attribution for wire-format assumptions, and a fast edit-compile-test loop. |
-| P5 | **YouTube's InnerTube API** | The reverse-engineered upstream. Not a person. The tool must be a well-behaved client of this API — reasonable request rates, a plausible `User-Agent` and client identity, graceful handling when responses change shape without notice. |
-| P6 | **ffmpeg (external binary)** | The external process responsible for muxing the separate video and audio streams into a single MP4, and for converting audio to MP3 when requested. Its success or failure is reported upward; the tool must handle its absence, its errors, and its version differences gracefully. |
+| ID  | Persona                             | Role                                                                                                                                                                                                                                                                                                          |
+| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1  | **CLI User (Researcher / Learner)** | A developer, student, journalist, or researcher who runs the tool on their own machine against YouTube URLs they are licensed to download. They want the video, audio, or transcript as local files so they can study, quote, transcribe, remix, or archive the content offline. This is the primary persona. |
+| P2  | **Transcript Consumer**             | Someone who downloads a video specifically for its transcript — to feed into an LLM summariser, to search textually, to quote in writing, or to accessibility-caption derived work. Their success depends on the transcript being complete, timestamped when requested, and in a format they can process.     |
+| P3  | **Java Library Embedder**           | A developer who wants to invoke youtubeDownloader's core functionality from their own Java program (e.g., a personal task-manager that auto-downloads a queued URL, a Discord bot, a batch script). They care about a clean, embeddable API — not a CLI.                                                      |
+| P4  | **Maintainer (Future Self)**        | The developer (likely the original author, six months later) who has to diagnose why the tool suddenly fails because YouTube changed something. They care about clear error messages, source attribution for wire-format assumptions, and a fast edit-compile-test loop.                                      |
+| P5  | **YouTube's InnerTube API**         | The reverse-engineered upstream. Not a person. The tool must be a well-behaved client of this API — reasonable request rates, a plausible `User-Agent` and client identity, graceful handling when responses change shape without notice.                                                                     |
+| P6  | **ffmpeg (external binary)**        | The external process responsible for muxing the separate video and audio streams into a single MP4, and for converting audio to MP3 when requested. Its success or failure is reported upward; the tool must handle its absence, its errors, and its version differences gracefully.                          |
 
 ---
 

@@ -82,4 +82,4 @@ grep -rn "re-evaluate_by" design/reviews/
 
 | File | Phase | Reviewed commit | Status | Reviewer |
 |---|---|---|---|---|
-| _(none yet)_ | — | — | — | — |
+| [2026-05-02-requirements-phase-1a-r1.md](./2026-05-02-requirements-phase-1a-r1.md) | requirements (1a) | `1481921` | resolved | srk |

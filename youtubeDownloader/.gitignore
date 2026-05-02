@@ -4,4 +4,5 @@ target/
 .idea/
 *.iml
 .DS_Store
+.obsidian/
 dependency-reduced-pom.xml
