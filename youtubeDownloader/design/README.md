@@ -82,6 +82,7 @@ ADRs capture the *why* behind the *what* — decisions whose rationale isn't sel
 | ADR | Decision | Status |
 |---|---|---|
 | [0001](./adr/0001-android-innertube-client.md) | Use the ANDROID InnerTube client as the primary stream-metadata source | Accepted |
+| [0002](./adr/0002-okhttp.md) | Use OkHttp for HTTP | Accepted |
 
 ## Spec-driven phases
 
