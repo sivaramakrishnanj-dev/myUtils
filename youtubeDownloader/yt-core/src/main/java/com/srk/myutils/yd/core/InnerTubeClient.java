@@ -28,8 +28,8 @@ import java.time.Duration;
  *
  * <p>The OkHttpClient is injected via the constructor for testability.
  * Production callers use {@link #create()} which builds a client with
- * NFR-pinned timeouts and a no-op retry interceptor stub (T-1.6 replaces
- * it with the real exponential-backoff interceptor).
+ * NFR-pinned timeouts and the exponential-backoff retry interceptor
+ * per AC-12.4.
  *
  * <p>Exactly one POST per {@link #fetchPlayer(VideoId)} call (AC-12.3,
  * INV-9).
@@ -71,16 +71,15 @@ public final class InnerTubeClient {
 
     /**
      * Factory that builds an {@code InnerTubeClient} with production-default
-     * OkHttp configuration: NFR-pinned timeouts and a no-op retry interceptor
-     * stub (T-1.6 replaces with real exponential-backoff interceptor).
+     * OkHttp configuration: NFR-pinned timeouts and the exponential-backoff
+     * retry interceptor per AC-12.4.
      */
     public static InnerTubeClient create() {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(Duration.ofSeconds(10))  // NFR-NETWORK-TIMEOUT-CONNECT
                 .readTimeout(Duration.ofSeconds(30))     // NFR-NETWORK-TIMEOUT-READ
                 .callTimeout(Duration.ofSeconds(30))     // NFR-INNERTUBE-REQUEST-TIMEOUT
-                // T-1.6: replace this no-op interceptor with RetryInterceptor (AC-12.4)
-                .addInterceptor(chain -> chain.proceed(chain.request()))
+                .addInterceptor(new InnerTubeRetryInterceptor())  // AC-12.4
                 .build();
         return new InnerTubeClient(client);
     }
