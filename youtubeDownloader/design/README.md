@@ -90,7 +90,7 @@ This package is being built spec-first. Phases are gated by review + approval. N
 | Phase | Artifact | Status |
 |---|---|---|
 | 1 — Requirements | `00-requirements.md` | **resolved** (1a `1481921`; 1b `d300785`; 1c `41eefc0`) |
-| 2 — Design | `01`–`05`, ADRs | next |
+| 2 — Design | `01`–`05`, ADRs | in progress (01-overview.md draft) |
 | 3 — Formal contracts | `06-formal/` | pending |
 | 4 — Tasks | `07-tasks.md` | pending |
 | 5 — Code | `src/main/**` | pending |

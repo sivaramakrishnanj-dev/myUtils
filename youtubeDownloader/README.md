@@ -20,4 +20,4 @@ Only download content you have the right to download. YouTube's Terms of Service
 
 ## Status
 
-Phase 1 — Requirements **resolved** (1a `1481921`; 1b `d300785`; 1c `41eefc0`). Phase 2 — Design is next. Code has not started.
+Phase 2 — Design in progress. `01-overview.md` is in draft. Phase 1 — Requirements **resolved** (1a `1481921`; 1b `d300785`; 1c `41eefc0`). Code has not started.
