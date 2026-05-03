@@ -1,0 +1,78 @@
+# spec-driven.yaml — youtubeDownloader project config
+#
+# Consumed by the specDrivenCoordinator (and sub-agents) from
+# ~/.kiro/skills/spec-driven/ to drive Phase 5 implementation.
+# Schema documented in ~/.kiro/skills/spec-driven/SHARED.md § 1.
+
+# ─────────────────────────────────────────────────────────────────
+# Identity
+# ─────────────────────────────────────────────────────────────────
+project_name: youtube-downloader
+project_root: /Users/sivarj/my/workspace/utilWorkspace/myUtils/youtubeDownloader
+language: java
+language_version: "17"
+build_tool: maven
+build_command: "mvn clean verify"
+test_command: "mvn test"
+integration_test_command: "mvn verify -P integration"
+
+# ─────────────────────────────────────────────────────────────────
+# Design artifact locations (relative to project_root)
+# ─────────────────────────────────────────────────────────────────
+design_dir: design/
+requirements_file: design/00-requirements.md
+overview_file: design/01-overview.md
+architecture_file: design/02-architecture.md
+data_model_file: design/03-data-model.md
+apis_file: design/04-apis.md
+operations_file: design/05-operations.md
+tasks_file: design/07-tasks.md
+formal_dir: design/06-formal/
+adr_dir: design/adr/
+reviews_dir: design/reviews/
+code_reviews_dir: design/reviews/code/
+
+# ─────────────────────────────────────────────────────────────────
+# Source code layout
+# ─────────────────────────────────────────────────────────────────
+source_dirs:
+  - "yt-core/src/main/**"
+  - "yt-cli/src/main/**"
+build_files:
+  - "pom.xml"
+  - "yt-core/pom.xml"
+  - "yt-cli/pom.xml"
+test_dirs:
+  - "yt-core/src/test/**"
+  - "yt-cli/src/test/**"
+test_fixtures_dir: "yt-core/src/test/resources/fixtures"
+integration_test_tag: "integration"
+
+# ─────────────────────────────────────────────────────────────────
+# Skills — which language-reviewer rulebook does specDrivenReviewer inherit?
+# ─────────────────────────────────────────────────────────────────
+language_reviewer_skill: java-code-reviewer
+shared_review_rubric: _shared/review-rubric.md
+
+# ─────────────────────────────────────────────────────────────────
+# Progress tracking
+# ─────────────────────────────────────────────────────────────────
+progress_file: design/07-tasks-progress.md
+open_questions_file: design/open-questions.md
+
+# ─────────────────────────────────────────────────────────────────
+# Git
+# ─────────────────────────────────────────────────────────────────
+git_remote: origin
+git_branch: main
+commit_message_prefix: "youtubeDownloader: "
+push_on_task_resolution: true
+
+# ─────────────────────────────────────────────────────────────────
+# Coordinator behaviour
+# ─────────────────────────────────────────────────────────────────
+autonomy_mode: autonomous
+max_test_loop_iterations: 3
+max_review_loop_iterations: 3
+max_total_iterations_per_task: 10
+stop_at_milestone_gates: true
