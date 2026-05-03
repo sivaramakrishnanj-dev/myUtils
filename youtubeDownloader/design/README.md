@@ -84,6 +84,7 @@ ADRs capture the *why* behind the *what* — decisions whose rationale isn't sel
 | [0001](./adr/0001-android-innertube-client.md) | Use the ANDROID InnerTube client as the primary stream-metadata source | Accepted |
 | [0002](./adr/0002-okhttp.md) | Use OkHttp for HTTP | Accepted |
 | [0003](./adr/0003-ffmpeg-processbuilder.md) | Shell out to `ffmpeg` via `ProcessBuilder` for muxing and audio transcoding | Accepted |
+| [0004](./adr/0004-jackson-for-json.md) | Use Jackson for InnerTube JSON parsing | Accepted |
 
 ## Spec-driven phases
 
