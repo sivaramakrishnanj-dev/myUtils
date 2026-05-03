@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/srk/youtubeDownloader/innertube-player-request.schema.json/v1",
+  "title": "InnerTube /youtubei/v1/player request body (ANDROID client)",
+  "description": "JSON body we POST to https://www.youtube.com/youtubei/v1/player per ADR 0001 and 04-apis.md \u00a7 1.1. Authoritative for what we send; the corresponding response is described by innertube-player-response.schema.json. x-captured-on: 2026-05-03.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["videoId", "context"],
+  "properties": {
+    "videoId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{11}$",
+      "description": "11-character YouTube video identifier (AC-1.1 VideoId)."
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["client"],
+      "properties": {
+        "client": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "clientName",
+            "clientVersion",
+            "androidSdkVersion",
+            "hl",
+            "gl",
+            "osName",
+            "osVersion",
+            "platform"
+          ],
+          "properties": {
+            "clientName": { "const": "ANDROID", "description": "ADR 0001 pins ANDROID." },
+            "clientVersion": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+              "description": "NFR-ANDROID-CLIENT-VERSION, e.g. 19.09.37."
+            },
+            "androidSdkVersion": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "NFR-ANDROID-SDK-VERSION, e.g. 34."
+            },
+            "hl": {
+              "type": "string",
+              "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+              "description": "NFR-INNERTUBE-HL, e.g. en."
+            },
+            "gl": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$",
+              "description": "NFR-INNERTUBE-GL, e.g. US."
+            },
+            "osName": { "const": "Android" },
+            "osVersion": {
+              "type": "string",
+              "pattern": "^[0-9]+(\\.[0-9]+)?$",
+              "description": "Android OS version string, e.g. '14'."
+            },
+            "platform": { "const": "MOBILE" }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "videoId": "dQw4w9WgXcQ",
+      "context": {
+        "client": {
+          "clientName": "ANDROID",
+          "clientVersion": "19.09.37",
+          "androidSdkVersion": 34,
+          "hl": "en",
+          "gl": "US",
+          "osName": "Android",
+          "osVersion": "14",
+          "platform": "MOBILE"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "videoDetails": {
+    "videoId": "nocapnocapz",
+    "title": "Synthesized no-captions fixture",
+    "isLive": false,
+    "isPrivate": false,
+    "thumbnail": {
+      "thumbnails": [
+        { "url": "https://i.ytimg.com/vi/nocapnocapz/mqdefault.jpg", "width": 320, "height": 180 }
+      ]
+    }
+  },
+  "playabilityStatus": { "status": "OK" },
+  "streamingData": {
+    "adaptiveFormats": [
+      {
+        "itag": 137,
+        "mimeType": "video/mp4; codecs=\"avc1.640028\"",
+        "bitrate": 4500000,
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "contentLength": "95000000",
+        "url": "https://rr3---sn-synthetic.googlevideo.com/videoplayback?synthetic=1"
+      },
+      {
+        "itag": 140,
+        "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+        "bitrate": 130000,
+        "audioSampleRate": "44100",
+        "contentLength": "5000000",
+        "url": "https://rr3---sn-synthetic.googlevideo.com/videoplayback?synthetic=1"
+      }
+    ]
+  }
+}

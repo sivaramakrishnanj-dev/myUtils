@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/srk/youtubeDownloader/innertube-player-response.schema.json/v1",
+  "title": "InnerTube /youtubei/v1/player response body — consumed fields only",
+  "description": "Structural shape of the JSON response we consume from InnerTube /player. Per ADR 0004, additionalProperties is true at every nested level — YouTube may add fields without breaking us; only shape *changes* to required fields we read should trip validation. x-captured-on: 2026-05-03. Source: ANDROID client v19.09.37. See 04-apis.md \u00a7 1.1.3 for the prose description.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["videoDetails", "playabilityStatus"],
+  "properties": {
+    "videoDetails": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["videoId", "title", "isLive"],
+      "properties": {
+        "videoId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{11}$",
+          "description": "Must equal the videoId from the request."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable video title."
+        },
+        "isLive": {
+          "type": "boolean",
+          "description": "true triggers exit code 21 per AC-1.7."
+        },
+        "isPrivate": {
+          "type": "boolean"
+        },
+        "audioLanguage": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]+)?$",
+          "description": "BCP-47; used by AC-8.1 step 3 fallback."
+        },
+        "thumbnail": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["thumbnails"],
+          "properties": {
+            "thumbnails": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "required": ["url", "width", "height"],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "pattern": "^https?://"
+                  },
+                  "width": { "type": "integer", "minimum": 1 },
+                  "height": { "type": "integer", "minimum": 1 }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "playabilityStatus": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Known values mapped in PlayabilityStatus enum (03-data-model.md \u00a7 2.7). Unknown values map to UNKNOWN sentinel and trigger exit 11 (parse error)."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Human-readable reason when status != OK."
+        }
+      }
+    },
+    "streamingData": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "adaptiveFormats": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["itag", "mimeType", "bitrate"],
+            "properties": {
+              "itag": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "mimeType": {
+                "type": "string",
+                "pattern": "^(video|audio)/"
+              },
+              "bitrate": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "width": { "type": "integer", "minimum": 1 },
+              "height": { "type": "integer", "minimum": 1 },
+              "fps": { "type": "integer", "minimum": 1 },
+              "audioSampleRate": {
+                "type": "string",
+                "pattern": "^[0-9]+$",
+                "description": "InnerTube returns sample rate as a base-10 string; we parse to int in Format record."
+              },
+              "contentLength": {
+                "type": "string",
+                "pattern": "^[0-9]+$",
+                "description": "Also returned as base-10 string."
+              },
+              "url": {
+                "type": "string",
+                "pattern": "^https?://",
+                "description": "Direct CDN URL. Mutually exclusive with signatureCipher per INV on Format."
+              },
+              "signatureCipher": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Presence = ciphered URL; FormatSelector rejects formats whose signatureCipher is non-empty (AC-5.3). If ALL formats have it, the run fails with exit 22."
+              }
+            }
+          }
+        }
+      }
+    },
+    "captions": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "playerCaptionsTracklistRenderer": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "captionTracks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "required": ["baseUrl", "languageCode"],
+                "properties": {
+                  "baseUrl": {
+                    "type": "string",
+                    "pattern": "^https?://",
+                    "description": "Target of CaptionDownloader (04-apis.md \u00a7 1.3)."
+                  },
+                  "languageCode": {
+                    "type": "string",
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]+)?$",
+                    "description": "BCP-47 language tag."
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["asr"],
+                    "description": "Optional; present only for auto-generated tracks (AC-7.1). Manual tracks omit this field."
+                  },
+                  "name": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "properties": {
+                      "simpleText": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "videoDetails": {
+        "videoId": "dQw4w9WgXcQ",
+        "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+        "isLive": false,
+        "isPrivate": false,
+        "audioLanguage": "en",
+        "thumbnail": {
+          "thumbnails": [
+            { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg", "width": 320, "height": 180 },
+            { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg", "width": 480, "height": 360 },
+            { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg", "width": 1280, "height": 720 }
+          ]
+        }
+      },
+      "playabilityStatus": { "status": "OK" },
+      "streamingData": {
+        "adaptiveFormats": [
+          {
+            "itag": 137,
+            "mimeType": "video/mp4; codecs=\"avc1.640028\"",
+            "bitrate": 4500000,
+            "width": 1920,
+            "height": 1080,
+            "fps": 30,
+            "contentLength": "95000000",
+            "url": "https://rr3---sn-xxxx.googlevideo.com/videoplayback?expire=..."
+          },
+          {
+            "itag": 140,
+            "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+            "bitrate": 130000,
+            "audioSampleRate": "44100",
+            "contentLength": "5000000",
+            "url": "https://rr3---sn-xxxx.googlevideo.com/videoplayback?expire=..."
+          }
+        ]
+      },
+      "captions": {
+        "playerCaptionsTracklistRenderer": {
+          "captionTracks": [
+            {
+              "baseUrl": "https://www.youtube.com/api/timedtext?v=dQw4w9WgXcQ&lang=en",
+              "languageCode": "en",
+              "name": { "simpleText": "English" }
+            },
+            {
+              "baseUrl": "https://www.youtube.com/api/timedtext?v=dQw4w9WgXcQ&lang=en&kind=asr",
+              "languageCode": "en",
+              "kind": "asr",
+              "name": { "simpleText": "English (auto-generated)" }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

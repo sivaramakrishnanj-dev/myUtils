@@ -1,0 +1,39 @@
+{
+  "videoDetails": {
+    "videoId": "asronlyasr1",
+    "title": "Synthesized ASR-only captions fixture",
+    "isLive": false,
+    "isPrivate": false,
+    "audioLanguage": "en",
+    "thumbnail": {
+      "thumbnails": [
+        { "url": "https://i.ytimg.com/vi/asronlyasr1/mqdefault.jpg", "width": 320, "height": 180 }
+      ]
+    }
+  },
+  "playabilityStatus": { "status": "OK" },
+  "streamingData": {
+    "adaptiveFormats": [
+      {
+        "itag": 140,
+        "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+        "bitrate": 130000,
+        "audioSampleRate": "44100",
+        "contentLength": "5000000",
+        "url": "https://rr3---sn-synthetic.googlevideo.com/videoplayback?synthetic=1"
+      }
+    ]
+  },
+  "captions": {
+    "playerCaptionsTracklistRenderer": {
+      "captionTracks": [
+        {
+          "baseUrl": "https://www.youtube.com/api/timedtext?v=asronlyasr1&lang=en&kind=asr",
+          "languageCode": "en",
+          "kind": "asr",
+          "name": { "simpleText": "English (auto-generated)" }
+        }
+      ]
+    }
+  }
+}

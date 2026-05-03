@@ -1,0 +1,14 @@
+{
+  "videoDetails": {
+    "videoId": "livelivelv1",
+    "title": "Synthesized live stream fixture",
+    "isLive": true,
+    "isPrivate": false,
+    "thumbnail": {
+      "thumbnails": [
+        { "url": "https://i.ytimg.com/vi/livelivelv1/mqdefault.jpg", "width": 320, "height": 180 }
+      ]
+    }
+  },
+  "playabilityStatus": { "status": "OK" }
+}

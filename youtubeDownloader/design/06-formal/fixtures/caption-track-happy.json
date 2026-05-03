@@ -1,0 +1,7 @@
+{
+  "cues": [
+    { "startMs": 120,  "durationMs": 1680, "text": "Hello and welcome" },
+    { "startMs": 1800, "durationMs": 2400, "text": "to this video" },
+    { "startMs": 4200, "durationMs": 1500, "text": "Today we'll talk about \"escapes\" & co." }
+  ]
+}
