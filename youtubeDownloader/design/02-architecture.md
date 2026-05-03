@@ -2,9 +2,9 @@
 doc: architecture
 last_reviewed: 2026-05-03
 phase: 2-design
-status: draft
-review:
-approved_in:
+status: resolved
+review: reviews/2026-05-03-design-02-architecture-r1.md
+approved_in: ec90ff8
 ---
 
 # 02 — Architecture

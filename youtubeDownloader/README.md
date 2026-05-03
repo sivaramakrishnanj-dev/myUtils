@@ -20,4 +20,4 @@ Only download content you have the right to download. YouTube's Terms of Service
 
 ## Status
 
-Phase 2 — Design in progress. `01-overview.md` **resolved** at `aceca50`; `02-architecture.md` in draft; ADRs 0001–0004 to follow. Phase 1 — Requirements **resolved** (1a `1481921`; 1b `d300785`; 1c `41eefc0`). Code has not started.
+Phase 2 — Design in progress. `01-overview.md` **resolved** at `aceca50`; `02-architecture.md` **resolved** at `ec90ff8`; ADRs 0001–0004 in progress. Phase 1 — Requirements **resolved** (1a `1481921`; 1b `d300785`; 1c `41eefc0`). Code has not started.
