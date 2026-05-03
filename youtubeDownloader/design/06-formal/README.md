@@ -1,7 +1,9 @@
 ---
 doc: formal-index
 last_reviewed: 2026-05-03
-status: draft
+status: resolved
+review: ../reviews/2026-05-03-formal-phase-3-r1.md
+approved_in: 12fb5cc
 ---
 
 # 06 — Formal Specs

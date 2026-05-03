@@ -94,8 +94,8 @@ This package is being built spec-first. Phases are gated by review + approval. N
 |---|---|---|
 | 1 — Requirements | `00-requirements.md` | **resolved** (1a `1481921`; 1b `d300785`; 1c `41eefc0`) |
 | 2 — Design | `01`–`05`, ADRs | **resolved** (`01` `aceca50`; `02` `ec90ff8`; ADRs 0001–0004 `f44e681`/`bae8a87`/`278f51f`/`1d10c7c`; `03` `5a418a1`; `04` `4088d0f`; `05` `ebcc8b9`) |
-| 3 — Formal contracts | `06-formal/` | draft |
-| 4 — Tasks | `07-tasks.md` | pending |
+| 3 — Formal contracts | `06-formal/` | **resolved** (`12fb5cc`) |
+| 4 — Tasks | `07-tasks.md` | next |
 | 5 — Code | `src/main/**` | pending |
 
 Within Phase 1 (Requirements), we followed three sub-phases, each individually reviewed:
