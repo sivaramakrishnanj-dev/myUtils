@@ -81,7 +81,7 @@ ADRs capture the *why* behind the *what* — decisions whose rationale isn't sel
 
 | ADR | Decision | Status |
 |---|---|---|
-| _(none yet)_ | ADRs will be added during Phase 2 (Design). | — |
+| [0001](./adr/0001-android-innertube-client.md) | Use the ANDROID InnerTube client as the primary stream-metadata source | Accepted |
 
 ## Spec-driven phases
 
