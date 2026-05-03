@@ -1,8 +1,8 @@
 ---
 doc: requirements
-last_reviewed: 2026-05-02
+last_reviewed: 2026-05-03
 phase: 1c-nfrs   # 1a-user-stories | 1b-acceptance-criteria | 1c-nfrs | resolved
-status: in-progress
+status: draft
 phase_1a_approved_in: 1481921
 phase_1a_review: reviews/2026-05-02-requirements-phase-1a-r1.md
 phase_1b_approved_in: d300785
@@ -21,7 +21,7 @@ Requirements are built in three sub-phases, each reviewed and approved before th
 |---|---|---|
 | 1a | Personas + user stories | **resolved** (review: [`1481921`](./reviews/2026-05-02-requirements-phase-1a-r1.md)) |
 | 1b | Acceptance criteria (EARS format) | **resolved** (review: [`d300785`](./reviews/2026-05-02-requirements-phase-1b-r1.md)) |
-| 1c | Non-functional requirements | in progress |
+| 1c | Non-functional requirements | **draft** (this document) |
 
 > **Scope anchor:** this project is inspired by `yt-dlp` but deliberately covers a tiny subset: one YouTube video URL → video / audio / transcript / thumbnail on local disk. Every other site, feature, and edge case `yt-dlp` supports is out of scope for the MVP.
 
@@ -438,3 +438,118 @@ A Phase 1b draft is considered ready for review when:
 - [x] Every numeric threshold used in an AC is referenced by a symbolic `NFR-*` name, not embedded as a literal number.
 - [x] The failure-category → exit-code mapping is defined once (AC-5.2) and referenced from every failure-related AC.
 - [x] No AC depends on a specific library, framework, or class name (those belong in `02-architecture.md`).
+
+
+---
+
+# Phase 1c — Non-functional requirements
+
+This section pins the numeric, version, and platform thresholds the tool depends on. Behavioural defaults were pinned in Phase 1b; Phase 1c is where the numbers land.
+
+NFRs use stable IDs of the form `NFR-<NAME>` and are organized into groups. ACs in Phase 1b reference these IDs symbolically; implementation and tests bind the values pinned here.
+
+> **Policy:** an NFR value cannot be silently changed by an implementation CR. Changes to any value in this section require a new review round (`-r2`, `-r3`, ...) on this file and an explicit phase transition entry in the front-matter.
+
+---
+
+## Group 1 — Platform and build
+
+| NFR | Value | Rationale |
+|---|---|---|
+| `NFR-JAVA-VERSION` | **17** | Java 17 LTS. Stable across macOS and Linux, no Java 21-only language features needed for MVP. Already selected during scope discussion; made contractual here. |
+| `NFR-BUILD-TOOL` | **Maven 3.9+** | Matches sibling `myUtils` projects (`taskTracker`, `focusGuard`). Fat-jar build via `maven-shade-plugin`. |
+| `NFR-SUPPORTED-OS` | **macOS 13+ (x86_64, aarch64); Linux (x86_64, aarch64) with glibc 2.31+** | Windows deliberately excluded for MVP — reduces testing matrix, sidesteps path-separator and executable-extension edge cases. Can be added later without architectural change if someone asks. |
+| `NFR-MAX-MEMORY` | **JVM default heap cap** (no explicit `-Xmx` in CLI invocation) | Streams are expected to flow through, not buffer whole files. The implementation is expected to hold this invariant; at 1080p a typical run should peak well under 200 MB even with default sizing. If a future run shows persistent heap growth, a cap gets added via a new NFR round. |
+| `NFR-MIN-DISK-FREE` | **2 × expected final file size** at the start of a run | `.part` files for video + audio during download plus the muxed final file briefly coexist. The implementation should probe free space before starting a download and fail fast with exit code `70` if insufficient. |
+
+## Group 2 — InnerTube client identity
+
+These values define how we identify ourselves to YouTube's reverse-engineered InnerTube API. They are the single most likely values to need updating if the tool stops working — that's expected, and a new NFR round is how we respond.
+
+| NFR | Value | Rationale |
+|---|---|---|
+| `NFR-ANDROID-CLIENT-VERSION` | **`19.09.37`** | Stable Android YouTube app version observed to work with InnerTube `/player` via the ANDROID client context without signature deciphering. Source for future updates: inspect the current Android app's `User-Agent` and `context.client.clientVersion` in a live request. An ADR in Phase 2 will record the client-choice decision. |
+| `NFR-ANDROID-USER-AGENT` | **`com.google.android.youtube/19.09.37 (Linux; U; Android 14) gzip`** | The exact `User-Agent` the Android YouTube app sends. Must match the `clientVersion` in the request body (mismatched versions occasionally trigger anti-abuse responses). |
+| `NFR-ANDROID-SDK-VERSION` | **`34`** | Android 14 SDK level. Matches the OS string in the User-Agent. Sent in the InnerTube `context.client.androidSdkVersion` field. |
+| `NFR-INNERTUBE-HL` | **`en`** | `context.client.hl` — UI language hint. English keeps response strings predictable for log parsing. Unaffected by the caption-language preference chain in AC-8.1. |
+| `NFR-INNERTUBE-GL` | **`US`** | `context.client.gl` — geolocation hint. `US` gives the broadest catalog access by default. Users who care about geo-restricted videos are outside MVP scope (OOS-6). |
+
+## Group 3 — Network timeouts and retries
+
+| NFR | Value | Rationale |
+|---|---|---|
+| `NFR-NETWORK-TIMEOUT-CONNECT` | **10 seconds** | TCP connect + TLS handshake for every HTTP request. Covers slow networks without wedging a run indefinitely. |
+| `NFR-NETWORK-TIMEOUT-READ` | **30 seconds** | Idle-read timeout between bytes mid-stream. Generous because YouTube CDN bursts can pause briefly mid-file. |
+| `NFR-INNERTUBE-REQUEST-TIMEOUT` | **30 seconds total** | End-to-end budget for one InnerTube `/player` call including connect, send, server processing, receive. Shorter than stream reads because the response is tiny (~50-200 KB). |
+| `NFR-CAPTION-DOWNLOAD-TIMEOUT` | **10 seconds total** | Caption files are small (rarely > 200 KB). A slower fetch almost always means the track is unavailable or the endpoint is misrouting. |
+| `NFR-THUMBNAIL-DOWNLOAD-TIMEOUT` | **10 seconds total** | Thumbnails are tens to hundreds of KB. Same rationale as captions. |
+| `NFR-STREAM-DOWNLOAD-TIMEOUT` | **unlimited (bounded by `NFR-NETWORK-TIMEOUT-READ` between bytes)** | Large files on slow networks are legitimate. Idle timeout between bytes protects against hangs; total-time cap would punish slow connections unfairly. |
+| `NFR-INNERTUBE-MAX-RETRIES` | **3** | Pinning AC-12.4. Three retries with exponential backoff covers transient 5xx and single-flight network blips. Beyond this, the failure is persistent and should be surfaced to the user. |
+| `NFR-INNERTUBE-BACKOFF-BASE` | **500 ms**, exponential with factor 2 | Pinning AC-12.4. First retry waits 500 ms, second 1000 ms, third 2000 ms. Total worst-case retry budget: 3.5 seconds. |
+| `NFR-STREAM-MAX-RETRIES` | **2** | Separate retry budget for the stream download itself (video or audio). Fewer retries because streams are long — a retry restarts from byte 0, which is expensive. |
+
+## Group 4 — Output and file handling
+
+| NFR | Value | Rationale |
+|---|---|---|
+| `NFR-MAX-FILENAME-LENGTH` | **200 characters** (excluding extension) | Pinning AC-3.4. Safely under the 255-byte `NAME_MAX` limit of APFS, ext4, and NTFS even for multi-byte UTF-8 titles. Leaves headroom for the `.mp4`, `.srt`, `.txt` extensions and the `[<video_id>]` suffix. |
+| `NFR-DEFAULT-MP3-BITRATE` | **192 kbps** | Pinning AC-2.4. Matches yt-dlp's default. Good quality/size balance — transparent to most listeners for spoken content, near-transparent for music. |
+| `NFR-TEMP-DIR-STRATEGY` | **`<output-dir>/.yt-tmp/`** created on demand, cleaned on success | `.part` files land here during the run. Same filesystem as output (no cross-device `rename`). Cleaned after successful mux; left in place on failure so the user can inspect. Directory is removed only when it's empty. |
+
+## Group 5 — Progress and logging
+
+| NFR | Value | Rationale |
+|---|---|---|
+| `NFR-PROGRESS-INTERVAL` | **1000 ms minimum** between progress lines in non-TTY (piped or redirected) mode | Pinning AC-4.3. Frequent enough for `tail -f` to feel responsive; infrequent enough to keep log files and CI job output readable. |
+| `NFR-PROGRESS-TTY-REFRESH` | **100 ms minimum** between progress-line redraws in TTY mode | Pinning AC-4.2 behaviour. Smooth enough to feel live, slow enough not to flicker or burn CPU on small writes. |
+| `NFR-LOG-PATTERN` | **`HH:mm:ss.SSS <LEVEL> <logger> - <message>`** | Consistent across all loggers. Millisecond precision helps correlate InnerTube response time with stream download start. |
+
+## Group 6 — ffmpeg integration
+
+| NFR | Value | Rationale |
+|---|---|---|
+| `NFR-MIN-FFMPEG-VERSION` | **4.0** | Pinning AC-13.3 and resolving OQ-7. Released 2018. Shipped by every supported macOS Homebrew release and every maintained Linux distribution. Covers all `ffmpeg` command-line flags we plan to use (`-i`, `-c copy`, `-map`, `-b:a`, `-loglevel`). A higher floor would exclude Debian 11 and older Ubuntu LTS for no real gain. |
+| `NFR-FFMPEG-STDERR-LINES` | **20** trailing lines echoed on failure | Pinning AC-13.4. Enough to see the actual error (encoder, stream info, offending line); not so many that the CLI error message becomes unreadable. |
+| `NFR-FFMPEG-INVOCATION-TIMEOUT` | **600 seconds (10 minutes)** per subprocess | Covers a 1-hour 1080p mux-remux on a slow machine with margin. A hung ffmpeg is a real failure mode. Exits via code `60` if exceeded. |
+| `NFR-FFMPEG-LOGLEVEL` | **`error`** at standard verbosity; **`info`** when `--debug` is set | Keeps the mux step quiet on success, verbose when the user is troubleshooting. Matches the logging level split in AC-10.5. |
+
+## Group 7 — Test suite thresholds
+
+| NFR | Value | Rationale |
+|---|---|---|
+| `NFR-UNIT-TEST-COVERAGE-MINIMUM` | **80% line coverage** on the library module | Enforced by JaCoCo during `mvn test`. The CLI module is excluded — it's mostly glue and picocli annotations. |
+| `NFR-UNIT-TEST-RUNTIME-BUDGET` | **30 seconds total** for `mvn test` on a developer laptop | If unit tests get slow, the offline-testability discipline of US-11 erodes. A budget makes slowness visible. |
+| `NFR-FIXTURE-RECORDING-DATE` | **`x-captured-on: YYYY-MM-DD`** in every InnerTube fixture's accompanying `.meta.json` | YouTube responses change without notice. When a parser starts failing, the fixture date tells a maintainer how stale the test data is. Same discipline as the `x-captured-on` field on JSON Schemas per `06-formal/README.md`. |
+
+---
+
+## NFR → AC coverage check
+
+Every `NFR-*` symbol referenced by any AC in Phase 1b has a row above. Cross-check:
+
+| NFR referenced in Phase 1b | Referenced by | Pinned in Group |
+|---|---|---|
+| `NFR-DEFAULT-MP3-BITRATE` | AC-2.4 | 4 |
+| `NFR-MAX-FILENAME-LENGTH` | AC-3.4 | 4 |
+| `NFR-PROGRESS-INTERVAL` | AC-4.3 | 5 |
+| `NFR-ANDROID-CLIENT-VERSION` | AC-12.1 | 2 |
+| `NFR-ANDROID-USER-AGENT` | AC-12.2 | 2 |
+| `NFR-INNERTUBE-MAX-RETRIES` | AC-12.4 | 3 |
+| `NFR-INNERTUBE-BACKOFF-BASE` | AC-12.4 | 3 |
+| `NFR-MIN-FFMPEG-VERSION` | AC-13.3 | 6 |
+| `NFR-FFMPEG-STDERR-LINES` | AC-13.4 | 6 |
+
+All nine symbolic references from Phase 1b are now bound to values.
+
+---
+
+## Phase 1c checklist (for the reviewer)
+
+A Phase 1c draft is considered ready for review when:
+
+- [x] Every `NFR-*` symbol referenced by an AC in Phase 1b has a concrete value pinned.
+- [x] Every NFR has a stable ID, a concrete value, and a one-line rationale.
+- [x] Values are numeric, version-shaped, or platform-named — no unqualified adjectives.
+- [x] Additional NFRs not pre-referenced in 1b (platform, build, memory, disk, logging format, test coverage) are grouped and labelled so reviewers can push back on individual numbers.
+- [x] The Android client-identity values (version, User-Agent, SDK level, hl, gl) are called out as most-likely-to-need-updating, so future rounds are expected rather than surprising.
+- [x] No NFR introduces behaviour that should have been specified as an AC — all values here pin thresholds, not new capabilities.
