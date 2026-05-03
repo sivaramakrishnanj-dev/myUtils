@@ -2,9 +2,9 @@
 doc: apis
 last_reviewed: 2026-05-03
 phase: 2-design
-status: draft
-review:
-approved_in:
+status: resolved
+review: reviews/2026-05-03-design-04-apis-r1.md
+approved_in: 4088d0f
 ---
 
 # 04 — APIs
