@@ -2,9 +2,9 @@
 doc: data-model
 last_reviewed: 2026-05-03
 phase: 2-design
-status: draft
-review:
-approved_in:
+status: resolved
+review: reviews/2026-05-03-design-03-data-model-r1.md
+approved_in: 5a418a1
 ---
 
 # 03 — Data Model
