@@ -2,9 +2,9 @@
 doc: operations
 last_reviewed: 2026-05-03
 phase: 2-design
-status: draft
-review:
-approved_in:
+status: resolved
+review: reviews/2026-05-03-design-05-operations-r1.md
+approved_in: ebcc8b9
 ---
 
 # 05 — Operations

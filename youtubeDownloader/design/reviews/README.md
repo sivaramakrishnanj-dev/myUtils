@@ -90,3 +90,4 @@ grep -rn "re-evaluate_by" design/reviews/
 | [2026-05-03-adrs-0001-0004-r1.md](./2026-05-03-adrs-0001-0004-r1.md) | design (ADRs 0001–0004) | `1d10c7c` | resolved | srk |
 | [2026-05-03-design-03-data-model-r1.md](./2026-05-03-design-03-data-model-r1.md) | design (03-data-model) | `5a418a1` | resolved | srk |
 | [2026-05-03-design-04-apis-r1.md](./2026-05-03-design-04-apis-r1.md) | design (04-apis) | `4088d0f` | resolved | srk |
+| [2026-05-03-design-05-operations-r1.md](./2026-05-03-design-05-operations-r1.md) | design (05-operations) | `ebcc8b9` | resolved | srk |
