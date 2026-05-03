@@ -92,3 +92,4 @@ grep -rn "re-evaluate_by" design/reviews/
 | [2026-05-03-design-04-apis-r1.md](./2026-05-03-design-04-apis-r1.md) | design (04-apis) | `4088d0f` | resolved | srk |
 | [2026-05-03-design-05-operations-r1.md](./2026-05-03-design-05-operations-r1.md) | design (05-operations) | `ebcc8b9` | resolved | srk |
 | [2026-05-03-formal-phase-3-r1.md](./2026-05-03-formal-phase-3-r1.md) | formal (Phase 3 combined) | `12fb5cc` | resolved | srk |
+| [2026-05-03-tasks-phase-4-r1.md](./2026-05-03-tasks-phase-4-r1.md) | tasks (Phase 4) | `ec9e74b` | resolved | srk |

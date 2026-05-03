@@ -20,4 +20,10 @@ Only download content you have the right to download. YouTube's Terms of Service
 
 ## Status
 
-Phase 3 — Formal contracts **resolved** (`12fb5cc`). Phase 2 — Design **resolved** (`01` `aceca50`; `02` `ec90ff8`; ADRs 0001–0004 `f44e681`/`bae8a87`/`278f51f`/`1d10c7c`; `03` `5a418a1`; `04` `4088d0f`; `05` `ebcc8b9`). Phase 1 — Requirements **resolved** (1a `1481921`; 1b `d300785`; 1c `41eefc0`). Phase 4 — Tasks is next. Code has not started.
+**All design phases resolved.** Phase 1 — Requirements, Phase 2 — Design, Phase 3 — Formal contracts, and Phase 4 — Tasks are all on `origin/main` and reviewed. Phase 5 — Code begins at task `T-0.1` per `design/07-tasks.md`.
+
+Last pushed SHAs per phase:
+- Phase 1: 1a `1481921`; 1b `d300785`; 1c `41eefc0`
+- Phase 2: `01` `aceca50`; `02` `ec90ff8`; ADRs 0001–0004 `f44e681`/`bae8a87`/`278f51f`/`1d10c7c`; `03` `5a418a1`; `04` `4088d0f`; `05` `ebcc8b9`
+- Phase 3: `12fb5cc`
+- Phase 4: `ec9e74b`

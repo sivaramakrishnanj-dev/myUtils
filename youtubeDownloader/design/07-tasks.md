@@ -2,9 +2,9 @@
 doc: tasks
 last_reviewed: 2026-05-03
 phase: 4-tasks
-status: draft
-review:
-approved_in:
+status: resolved
+review: reviews/2026-05-03-tasks-phase-4-r1.md
+approved_in: ec9e74b
 ---
 
 # 07 — Tasks
