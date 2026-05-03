@@ -24,11 +24,13 @@
         <slf4j.version>2.0.17</slf4j.version>
         <junit-jupiter.version>5.14.4</junit-jupiter.version>
         <assertj.version>3.27.7</assertj.version>
+        <picocli.version>4.7.7</picocli.version>
         <jqwik.version>1.9.3</jqwik.version>
     </properties>
 
     <modules>
         <module>yt-core</module>
+        <module>yt-cli</module>
     </modules>
 
     <dependencyManagement>
@@ -57,6 +59,25 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
+            <!-- CLI — picocli (ADR: design/02-architecture.md § 1.2) -->
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>${picocli.version}</version>
+            </dependency>
+
+            <!-- Internal — yt-core library -->
+            <dependency>
+                <groupId>com.srk.myutils.yd</groupId>
+                <artifactId>yt-core</artifactId>
+                <version>${project.version}</version>
             </dependency>
 
             <!-- Test — JUnit 5 -->
