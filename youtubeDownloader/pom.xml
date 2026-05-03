@@ -26,6 +26,9 @@
         <assertj.version>3.27.7</assertj.version>
         <picocli.version>4.7.7</picocli.version>
         <jqwik.version>1.9.3</jqwik.version>
+
+        <!-- Plugin versions -->
+        <shade-plugin.version>3.6.0</shade-plugin.version>
     </properties>
 
     <modules>
@@ -105,5 +108,17 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>${shade-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
 </project>
