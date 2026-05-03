@@ -87,3 +87,4 @@ grep -rn "re-evaluate_by" design/reviews/
 | [2026-05-03-requirements-phase-1c-r1.md](./2026-05-03-requirements-phase-1c-r1.md) | requirements (1c) | `41eefc0` | resolved | srk |
 | [2026-05-03-design-01-overview-r1.md](./2026-05-03-design-01-overview-r1.md) | design (01-overview) | `aceca50` | resolved | srk |
 | [2026-05-03-design-02-architecture-r1.md](./2026-05-03-design-02-architecture-r1.md) | design (02-architecture) | `ec90ff8` | resolved | srk |
+| [2026-05-03-adrs-0001-0004-r1.md](./2026-05-03-adrs-0001-0004-r1.md) | design (ADRs 0001–0004) | `1d10c7c` | resolved | srk |
