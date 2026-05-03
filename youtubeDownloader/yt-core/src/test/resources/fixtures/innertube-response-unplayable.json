@@ -1,0 +1,17 @@
+{
+  "videoDetails": {
+    "videoId": "privprivpr1",
+    "title": "Synthesized unplayable fixture",
+    "isLive": false,
+    "isPrivate": true,
+    "thumbnail": {
+      "thumbnails": [
+        { "url": "https://i.ytimg.com/vi/privprivpr1/mqdefault.jpg", "width": 320, "height": 180 }
+      ]
+    }
+  },
+  "playabilityStatus": {
+    "status": "UNPLAYABLE",
+    "reason": "This video is private."
+  }
+}
