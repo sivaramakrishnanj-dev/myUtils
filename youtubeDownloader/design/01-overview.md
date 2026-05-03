@@ -2,9 +2,9 @@
 doc: overview
 last_reviewed: 2026-05-03
 phase: 2-design
-status: draft
-review:
-approved_in:
+status: resolved
+review: reviews/2026-05-03-design-01-overview-r1.md
+approved_in: aceca50
 ---
 
 # 01 — Overview
