@@ -40,6 +40,15 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Test — yt-core test utilities (NoNetworkExtension) -->
+        <dependency>
+            <groupId>com.srk.myutils.yd</groupId>
+            <artifactId>yt-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Test — AssertJ (version managed by parent) -->
         <dependency>
             <groupId>org.assertj</groupId>

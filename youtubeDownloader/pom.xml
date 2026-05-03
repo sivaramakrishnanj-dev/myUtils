@@ -31,6 +31,9 @@
         <shade-plugin.version>3.6.0</shade-plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
         <surefire-failsafe.version>3.5.5</surefire-failsafe.version>
+
+        <!-- Default empty argLine; JaCoCo prepare-agent overrides this in modules that use it -->
+        <argLine/>
     </properties>
 
     <modules>
@@ -130,6 +133,9 @@
                     <version>${surefire-failsafe.version}</version>
                     <configuration>
                         <excludedGroups>integration</excludedGroups>
+                        <!-- @{argLine} preserves JaCoCo agent; the rest enables SecurityManager
+                             for NoNetworkExtension (AC-11.3). Required on Java 18+ (JEP 411). -->
+                        <argLine>@{argLine} -Djava.security.manager=allow</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -152,6 +158,11 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <yt.test.allow-network>true</yt.test.allow-network>
+                            </systemPropertyVariables>
+                        </configuration>
                         <executions>
                             <execution>
                                 <goals>

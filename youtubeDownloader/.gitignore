@@ -6,3 +6,4 @@ target/
 .DS_Store
 .obsidian/
 dependency-reduced-pom.xml
+.jqwik-database
