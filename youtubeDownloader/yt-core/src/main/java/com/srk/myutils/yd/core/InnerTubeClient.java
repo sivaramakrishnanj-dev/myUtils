@@ -89,7 +89,7 @@ public final class InnerTubeClient {
      *
      * @param videoId validated video identifier
      * @return raw response (HTTP status + body string)
-     * @throws InnerTubeException on network error or non-2xx HTTP status
+     * @throws NetworkException on network error or non-2xx HTTP status
      */
     public InnerTubeResponse fetchPlayer(VideoId videoId) {
         String jsonBody = buildRequestBody(videoId);
@@ -115,7 +115,7 @@ public final class InnerTubeClient {
             return new InnerTubeResponse(response.code(), bodyString);
         } catch (IOException e) {
             LOGGER.error("InnerTube request failed for videoId={}: {}", videoId.value(), e.getMessage());
-            throw new InnerTubeException(
+            throw new NetworkException(
                     "POST " + PLAYER_ENDPOINT + " failed for videoId=" + videoId.value(), e);
         }
     }
@@ -146,7 +146,7 @@ public final class InnerTubeClient {
             return MAPPER.writeValueAsString(root);
         } catch (JsonProcessingException e) {
             // Should never happen — we're building a simple tree of literals
-            throw new InnerTubeException("Failed to serialize InnerTube request body", e);
+            throw new NetworkException("Failed to serialize InnerTube request body", e);
         }
     }
 }

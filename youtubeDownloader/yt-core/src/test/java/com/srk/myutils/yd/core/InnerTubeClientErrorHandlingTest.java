@@ -145,37 +145,37 @@ class InnerTubeClientErrorHandlingTest {
     class IoExceptionHandling {
 
         @Test
-        @DisplayName("IOException wraps into InnerTubeException with cause")
-        void fetchPlayer_givenIoException_throwsInnerTubeException() {
+        @DisplayName("IOException wraps into NetworkException with cause")
+        void fetchPlayer_givenIoException_throwsNetworkException() {
             IOException cause = new IOException("connection reset");
             InnerTubeClient client = clientThrowing(cause);
 
             assertThatThrownBy(() -> client.fetchPlayer(VideoId.of("dQw4w9WgXcQ")))
-                    .isInstanceOf(InnerTubeException.class)
+                    .isInstanceOf(NetworkException.class)
                     .hasCause(cause)
                     .hasMessageContaining("dQw4w9WgXcQ")
                     .hasMessageContaining("/youtubei/v1/player");
         }
 
         @Test
-        @DisplayName("SocketTimeoutException wraps into InnerTubeException")
-        void fetchPlayer_givenSocketTimeout_throwsInnerTubeException() {
+        @DisplayName("SocketTimeoutException wraps into NetworkException")
+        void fetchPlayer_givenSocketTimeout_throwsNetworkException() {
             java.net.SocketTimeoutException cause = new java.net.SocketTimeoutException("Read timed out");
             InnerTubeClient client = clientThrowing(cause);
 
             assertThatThrownBy(() -> client.fetchPlayer(VideoId.of("dQw4w9WgXcQ")))
-                    .isInstanceOf(InnerTubeException.class)
+                    .isInstanceOf(NetworkException.class)
                     .hasCause(cause);
         }
 
         @Test
-        @DisplayName("UnknownHostException wraps into InnerTubeException")
-        void fetchPlayer_givenUnknownHost_throwsInnerTubeException() {
+        @DisplayName("UnknownHostException wraps into NetworkException")
+        void fetchPlayer_givenUnknownHost_throwsNetworkException() {
             java.net.UnknownHostException cause = new java.net.UnknownHostException("www.youtube.com");
             InnerTubeClient client = clientThrowing(cause);
 
             assertThatThrownBy(() -> client.fetchPlayer(VideoId.of("dQw4w9WgXcQ")))
-                    .isInstanceOf(InnerTubeException.class)
+                    .isInstanceOf(NetworkException.class)
                     .hasCause(cause);
         }
     }
