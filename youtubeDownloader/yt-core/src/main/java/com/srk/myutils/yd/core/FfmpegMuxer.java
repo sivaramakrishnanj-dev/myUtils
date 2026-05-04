@@ -51,6 +51,9 @@ public final class FfmpegMuxer {
     /** NFR-MIN-FFMPEG-VERSION = 4.0 */
     static final Version MIN_VERSION = new Version(4, 0, 0);
 
+    /** NFR-DEFAULT-MP3-BITRATE = 192 kbps */
+    static final String DEFAULT_MP3_BITRATE = "192k";
+
     /** Matches {@code ffmpeg version X.Y.Z} or {@code ffmpeg version N:X.Y.Z} etc. */
     private static final Pattern VERSION_LINE_PATTERN = Pattern.compile("^ffmpeg version (?:\\S+:)?(\\S+)");
 
@@ -184,6 +187,66 @@ public final class FfmpegMuxer {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new FfmpegException("ffmpeg mux interrupted", e);
+        }
+    }
+
+    /**
+     * Transcode an audio {@code .part} file to MP3 using {@code libmp3lame}
+     * at {@link #DEFAULT_MP3_BITRATE} per 04-apis.md § 2.1.3 and AC-2.4.
+     *
+     * @param audioPart path to the audio {@code .part} file
+     * @param output    path to the output {@code .mp3} file
+     * @param debug     when {@code true}, sets ffmpeg loglevel to {@code info}
+     *                  instead of {@code error} (NFR-FFMPEG-LOGLEVEL)
+     * @throws FfmpegException if ffmpeg exits non-zero (exit code 60)
+     */
+    public void transcodeMp3(Path audioPart, Path output, boolean debug) {
+        Objects.requireNonNull(audioPart, "audioPart");
+        Objects.requireNonNull(output, "output");
+
+        List<String> command = List.of(
+                ffmpegBinaryPath,
+                "-hide_banner",
+                "-loglevel", debug ? "info" : "error",
+                "-i", audioPart.toString(),
+                "-c:a", "libmp3lame",
+                "-b:a", DEFAULT_MP3_BITRATE,
+                "-y",
+                output.toString()
+        );
+
+        LOGGER.info("Transcoding audio → MP3: {}", String.join(" ", command));
+
+        try {
+            Process process = new ProcessBuilder(command)
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .start();
+            try {
+                String stderr;
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
+                    stderr = reader.lines().reduce((a, b) -> a + "\n" + b).orElse("");
+                }
+
+                int exitCode = process.waitFor();
+
+                if (exitCode != 0) {
+                    LOGGER.error("ffmpeg transcode failed (exit {}): {}", exitCode, stderr);
+                    throw new FfmpegException(
+                            "ffmpeg transcode failed (exit " + exitCode + ")"
+                                    + (stderr.isEmpty() ? "" : ":\n" + stderr));
+                }
+
+                LOGGER.info("Transcode complete: {}", output);
+            } finally {
+                process.destroy();
+            }
+        } catch (IOException e) {
+            LOGGER.error("ffmpeg transcode failed: {}", e.getMessage());
+            throw new FfmpegException("ffmpeg transcode failed: " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new FfmpegException("ffmpeg transcode interrupted", e);
         }
     }
 
