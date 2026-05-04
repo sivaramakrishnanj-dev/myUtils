@@ -1,5 +1,8 @@
 package com.srk.myutils.yd.core;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -18,6 +21,8 @@ import java.net.URISyntaxException;
  * Pure function — no network or filesystem I/O (AC-11.1).
  */
 public final class UrlParser {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UrlParser.class);
 
     private static final String UNSUPPORTED_MSG =
             "Unsupported URL: %s — expected https://www.youtube.com/watch?v=..., "
@@ -59,7 +64,9 @@ public final class UrlParser {
             default -> throw new UrlParseException(String.format(UNSUPPORTED_MSG, raw));
         };
 
-        return VideoId.of(candidate);
+        VideoId videoId = VideoId.of(candidate);
+        LOGGER.info("Parsed URL → videoId={}", videoId.value());
+        return videoId;
     }
 
     private static String extractFromWww(String raw, String path, String query) {

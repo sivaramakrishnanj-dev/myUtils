@@ -51,6 +51,7 @@ public final class Cli implements Callable<Integer> {
         } catch (Throwable t) {
             PrintWriter err = spec.commandLine().getErr();
             ErrorReport report = ErrorMapper.map(t);
+            LOGGER.error(report.message(), t);
             err.println(report.message());
             if (debug) {
                 t.printStackTrace(err);
@@ -68,7 +69,21 @@ public final class Cli implements Callable<Integer> {
     }
 
     public static void main(String[] args) {
+        configureLogging(args);
         int exitCode = new CommandLine(new Cli()).execute(args);
         System.exit(exitCode);
+    }
+
+    /**
+     * Pre-scans args for {@code --debug} and sets the SLF4J SimpleLogger
+     * default level to DEBUG before any logger is initialised (AC-10.5).
+     */
+    static void configureLogging(String[] args) {
+        for (String arg : args) {
+            if ("--debug".equals(arg)) {
+                System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
+                return;
+            }
+        }
     }
 }

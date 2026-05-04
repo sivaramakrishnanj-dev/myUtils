@@ -94,7 +94,7 @@ public final class InnerTubeClient {
     public InnerTubeResponse fetchPlayer(VideoId videoId) {
         String jsonBody = buildRequestBody(videoId);
 
-        LOGGER.info("InnerTube request: videoId={}", videoId.value());
+        LOGGER.info("InnerTube request: videoId={} client={}", videoId.value(), CLIENT_NAME);
         LOGGER.debug("InnerTube request body: {}", jsonBody);
 
         Request request = new Request.Builder()
@@ -114,7 +114,7 @@ public final class InnerTubeClient {
 
             return new InnerTubeResponse(response.code(), bodyString);
         } catch (IOException e) {
-            LOGGER.error("InnerTube request failed for videoId={}: {}", videoId.value(), e.getMessage());
+            LOGGER.debug("InnerTube request failed for videoId={}: {}", videoId.value(), e.getMessage());
             throw new NetworkException(
                     "POST " + PLAYER_ENDPOINT + " failed for videoId=" + videoId.value(), e);
         }
