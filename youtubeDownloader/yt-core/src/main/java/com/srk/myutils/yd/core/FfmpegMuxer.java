@@ -7,6 +7,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -118,6 +120,71 @@ public final class FfmpegMuxer {
         }
 
         return version;
+    }
+
+    /**
+     * Mux a video and audio {@code .part} file into a single MP4 container
+     * using {@code ffmpeg -c copy} (stream-copy, no re-encode) per ADR 0003
+     * and 04-apis.md § 2.1.2.
+     *
+     * @param videoPart path to the video {@code .part} file (input 0)
+     * @param audioPart path to the audio {@code .part} file (input 1)
+     * @param output    path to the output {@code .mp4} file
+     * @param debug     when {@code true}, sets ffmpeg loglevel to {@code info}
+     *                  instead of {@code error} (NFR-FFMPEG-LOGLEVEL)
+     * @throws FfmpegException if ffmpeg exits non-zero (exit code 60, AC-1.6, AC-13.4)
+     */
+    public void mux(Path videoPart, Path audioPart, Path output, boolean debug) {
+        Objects.requireNonNull(videoPart, "videoPart");
+        Objects.requireNonNull(audioPart, "audioPart");
+        Objects.requireNonNull(output, "output");
+
+        List<String> command = List.of(
+                ffmpegBinaryPath,
+                "-hide_banner",
+                "-loglevel", debug ? "info" : "error",
+                "-i", videoPart.toString(),
+                "-i", audioPart.toString(),
+                "-c", "copy",
+                "-map", "0:v:0",
+                "-map", "1:a:0",
+                "-y",
+                output.toString()
+        );
+
+        LOGGER.info("Muxing video+audio → MP4: {}", String.join(" ", command));
+
+        try {
+            Process process = new ProcessBuilder(command)
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .start();
+            try {
+                String stderr;
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
+                    stderr = reader.lines().reduce((a, b) -> a + "\n" + b).orElse("");
+                }
+
+                int exitCode = process.waitFor();
+
+                if (exitCode != 0) {
+                    LOGGER.error("ffmpeg mux failed (exit {}): {}", exitCode, stderr);
+                    throw new FfmpegException(
+                            "ffmpeg mux failed (exit " + exitCode + ")"
+                                    + (stderr.isEmpty() ? "" : ":\n" + stderr));
+                }
+
+                LOGGER.info("Mux complete: {}", output);
+            } finally {
+                process.destroy();
+            }
+        } catch (IOException e) {
+            LOGGER.error("ffmpeg mux failed: {}", e.getMessage());
+            throw new FfmpegException("ffmpeg mux failed: " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new FfmpegException("ffmpeg mux interrupted", e);
+        }
     }
 
     /**
