@@ -76,6 +76,7 @@ class YoutubeDownloaderAudioOnlyTest {
                 "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 true,
                 0,
+                Optional.empty(),
                 output,
                 ProgressListener.NO_OP);
 

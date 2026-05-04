@@ -119,7 +119,7 @@ class YoutubeDownloaderAudioOnlyBehaviorTest {
             Files.write(existing, new byte[]{0x42});
 
             OutputConfig output = new OutputConfig(Optional.empty(), Optional.of(tempDir), true);
-            DownloadRequest request = new DownloadRequest(VALID_URL, true, 0, output, ProgressListener.NO_OP);
+            DownloadRequest request = new DownloadRequest(VALID_URL, true, 0, Optional.empty(), output, ProgressListener.NO_OP);
 
             DownloadResult result = sut.download(request);
 
@@ -231,6 +231,7 @@ class YoutubeDownloaderAudioOnlyBehaviorTest {
                     "https://www.youtube.com/watch?v=aaaaaaaaaaa",
                     true,
                     0,
+                    Optional.empty(),
                     outputDir(tempDir),
                     ProgressListener.NO_OP);
 
@@ -313,7 +314,7 @@ class YoutubeDownloaderAudioOnlyBehaviorTest {
                     progressEvents.add(new long[]{bytesWritten, totalBytes});
 
             DownloadRequest request = new DownloadRequest(
-                    VALID_URL, true, 0, outputDir(tempDir), capturing);
+                    VALID_URL, true, 0, Optional.empty(), outputDir(tempDir), capturing);
 
             sut.download(request);
 
@@ -349,7 +350,7 @@ class YoutubeDownloaderAudioOnlyBehaviorTest {
             Path subDir = tempDir.resolve("my-downloads");
 
             OutputConfig output = new OutputConfig(Optional.empty(), Optional.of(subDir), false);
-            DownloadRequest request = new DownloadRequest(VALID_URL, true, 0, output, ProgressListener.NO_OP);
+            DownloadRequest request = new DownloadRequest(VALID_URL, true, 0, Optional.empty(), output, ProgressListener.NO_OP);
 
             DownloadResult result = sut.download(request);
 
@@ -364,7 +365,7 @@ class YoutubeDownloaderAudioOnlyBehaviorTest {
             Path outputFile = tempDir.resolve("my-audio.wav");
 
             OutputConfig output = new OutputConfig(Optional.of(outputFile), Optional.empty(), false);
-            DownloadRequest request = new DownloadRequest(VALID_URL, true, 0, output, ProgressListener.NO_OP);
+            DownloadRequest request = new DownloadRequest(VALID_URL, true, 0, Optional.empty(), output, ProgressListener.NO_OP);
 
             DownloadResult result = sut.download(request);
 
@@ -409,7 +410,7 @@ class YoutubeDownloaderAudioOnlyBehaviorTest {
     }
 
     private static DownloadRequest audioOnlyRequest(OutputConfig output) {
-        return new DownloadRequest(VALID_URL, true, 0, output, ProgressListener.NO_OP);
+        return new DownloadRequest(VALID_URL, true, 0, Optional.empty(), output, ProgressListener.NO_OP);
     }
 
     private static OutputConfig outputDir(Path dir) {

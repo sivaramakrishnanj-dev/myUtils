@@ -52,6 +52,9 @@ public final class Cli implements Callable<Integer> {
             defaultValue = "1080")
     private int maxHeight;
 
+    @Option(names = "--ffmpeg-location", description = "Path to ffmpeg binary (default: use PATH)")
+    private String ffmpegLocation;
+
     /** Default constructor — uses production {@link YoutubeDownloader}. */
     public Cli() {
         this(YoutubeDownloader.create());
@@ -73,6 +76,7 @@ public final class Cli implements Callable<Integer> {
                     url,
                     false,
                     maxHeight,
+                    Optional.ofNullable(ffmpegLocation),
                     new OutputConfig(Optional.empty(), Optional.empty(), false),
                     listener);
             DownloadResult result = downloader.download(request);

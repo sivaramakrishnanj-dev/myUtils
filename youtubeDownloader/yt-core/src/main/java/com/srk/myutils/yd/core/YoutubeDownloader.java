@@ -95,6 +95,7 @@ public final class YoutubeDownloader {
                 url,
                 false,
                 DownloadRequest.DEFAULT_MAX_HEIGHT,
+                Optional.empty(),
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 listener));
     }
@@ -117,6 +118,8 @@ public final class YoutubeDownloader {
      */
     public DownloadResult download(DownloadRequest request) {
         LOGGER.info("Starting download for URL: {}", request.url());
+        request.ffmpegLocation().ifPresent(loc ->
+                LOGGER.info("Using custom ffmpeg location: {}", loc));
 
         VideoId videoId = urlParser.parse(request.url());
         LOGGER.info("Parsed video id: {}", videoId.value());

@@ -1,22 +1,27 @@
 package com.srk.myutils.yd.core;
 
+import java.util.Optional;
+
 /**
  * Immutable request object for {@link YoutubeDownloader#download(DownloadRequest)}.
  *
  * <p>Encapsulates all user-facing options for a single download invocation:
  * the target URL, whether audio-only mode is active (AC-2.1), maximum video
- * height (AC-1.3), output configuration, and a progress listener.
+ * height (AC-1.3), ffmpeg binary location (AC-13.2), output configuration,
+ * and a progress listener.
  *
- * @param url        raw YouTube URL (required)
- * @param audioOnly  {@code true} for {@code --audio-only} mode (AC-2.1)
- * @param maxHeight  maximum video height; 0 = uncapped (AC-1.3)
- * @param output     output file placement and overwrite config
- * @param listener   progress callback; use {@link ProgressListener#NO_OP} to suppress
+ * @param url              raw YouTube URL (required)
+ * @param audioOnly        {@code true} for {@code --audio-only} mode (AC-2.1)
+ * @param maxHeight        maximum video height; 0 = uncapped (AC-1.3)
+ * @param ffmpegLocation   path to ffmpeg binary; empty = use system PATH (AC-13.2)
+ * @param output           output file placement and overwrite config
+ * @param listener         progress callback; use {@link ProgressListener#NO_OP} to suppress
  */
 public record DownloadRequest(
         String url,
         boolean audioOnly,
         int maxHeight,
+        Optional<String> ffmpegLocation,
         OutputConfig output,
         ProgressListener listener
 ) {
@@ -33,6 +38,6 @@ public record DownloadRequest(
 
     /** Convenience: audio-only request with default output config and no progress. */
     public static DownloadRequest audioOnly(String url, OutputConfig output) {
-        return new DownloadRequest(url, true, 0, output, ProgressListener.NO_OP);
+        return new DownloadRequest(url, true, 0, Optional.empty(), output, ProgressListener.NO_OP);
     }
 }
