@@ -304,14 +304,15 @@ class FormatSelectorBehaviorTest {
         }
 
         @Test
-        @DisplayName("All cipher video + good audio throws NoMatchingFormatException")
-        void select_givenAllCipherVideo_throws() {
+        @DisplayName("All cipher video + good audio throws CipherRequiredException (T-2.2, AC-5.3)")
+        void select_givenAllCipherVideo_throwsCipherRequired() {
             Format cipherV1 = cipherVideo(137, "avc1.640028", 1080, 4_500_000);
             Format cipherV2 = cipherVideo(136, "avc1.4d401f", 720, 2_500_000);
             Format audio = audioM4a(140, 130_000);
 
             assertThatThrownBy(() -> selector.select(List.of(cipherV1, cipherV2, audio), 1080))
-                    .isInstanceOf(NoMatchingFormatException.class);
+                    .isInstanceOf(CipherRequiredException.class)
+                    .hasMessageContaining("JavaScript signature deciphering");
         }
 
         @Test

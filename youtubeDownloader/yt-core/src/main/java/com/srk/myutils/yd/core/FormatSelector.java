@@ -57,9 +57,14 @@ public final class FormatSelector {
                 .filter(f -> !f.hasCipher())
                 .filter(f -> maxHeight == 0 || f.height().orElse(0) <= maxHeight)
                 .max(videoComparator())
-                .orElseThrow(() -> new NoMatchingFormatException(
-                        "no video format matches the selection criteria"
-                                + (maxHeight > 0 ? " (max-height=" + maxHeight + ")" : "")));
+                .orElseThrow(() -> {
+                    if (allCipher(formats, true)) {
+                        return newCipherException();
+                    }
+                    return new NoMatchingFormatException(
+                            "no video format matches the selection criteria"
+                                    + (maxHeight > 0 ? " (max-height=" + maxHeight + ")" : ""));
+                });
     }
 
     private Format selectAudio(List<Format> formats) {
@@ -67,8 +72,26 @@ public final class FormatSelector {
                 .filter(Format::isAudio)
                 .filter(f -> !f.hasCipher())
                 .max(audioComparator())
-                .orElseThrow(() -> new NoMatchingFormatException(
-                        "no audio format matches the selection criteria"));
+                .orElseThrow(() -> {
+                    if (allCipher(formats, false)) {
+                        return newCipherException();
+                    }
+                    return new NoMatchingFormatException(
+                            "no audio format matches the selection criteria");
+                });
+    }
+
+    private static boolean allCipher(List<Format> formats, boolean video) {
+        List<Format> kind = formats.stream()
+                .filter(video ? Format::isVideo : Format::isAudio)
+                .toList();
+        return !kind.isEmpty() && kind.stream().allMatch(Format::hasCipher);
+    }
+
+    private static CipherRequiredException newCipherException() {
+        return new CipherRequiredException(
+                "this video requires JavaScript signature deciphering, "
+                        + "which is out of scope for this tool. Use yt-dlp for this URL.");
     }
 
     /**
