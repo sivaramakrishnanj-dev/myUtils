@@ -5,9 +5,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -53,6 +56,9 @@ public final class FfmpegMuxer {
 
     /** NFR-DEFAULT-MP3-BITRATE = 192 kbps */
     static final String DEFAULT_MP3_BITRATE = "192k";
+
+    /** NFR-FFMPEG-STDERR-LINES = 20 trailing lines captured on failure (AC-13.4). */
+    static final int FFMPEG_STDERR_LINES = 20;
 
     /** Matches {@code ffmpeg version X.Y.Z} or {@code ffmpeg version N:X.Y.Z} etc. */
     private static final Pattern VERSION_LINE_PATTERN = Pattern.compile("^ffmpeg version (?:\\S+:)?(\\S+)");
@@ -162,19 +168,15 @@ public final class FfmpegMuxer {
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     .start();
             try {
-                String stderr;
-                try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
-                    stderr = reader.lines().reduce((a, b) -> a + "\n" + b).orElse("");
-                }
-
+                List<String> tailStderr = captureLastLines(process.getErrorStream(), FFMPEG_STDERR_LINES);
                 int exitCode = process.waitFor();
 
                 if (exitCode != 0) {
-                    LOGGER.error("ffmpeg mux failed (exit {}): {}", exitCode, stderr);
+                    String stderrText = String.join("\n", tailStderr);
+                    LOGGER.error("ffmpeg mux failed (exit {}): {}", exitCode, stderrText);
                     throw new FfmpegException(
                             "ffmpeg mux failed (exit " + exitCode + ")"
-                                    + (stderr.isEmpty() ? "" : ":\n" + stderr));
+                                    + (stderrText.isEmpty() ? "" : ":\n" + stderrText));
                 }
 
                 LOGGER.info("Mux complete: {}", output);
@@ -222,19 +224,15 @@ public final class FfmpegMuxer {
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     .start();
             try {
-                String stderr;
-                try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
-                    stderr = reader.lines().reduce((a, b) -> a + "\n" + b).orElse("");
-                }
-
+                List<String> tailStderr = captureLastLines(process.getErrorStream(), FFMPEG_STDERR_LINES);
                 int exitCode = process.waitFor();
 
                 if (exitCode != 0) {
-                    LOGGER.error("ffmpeg transcode failed (exit {}): {}", exitCode, stderr);
+                    String stderrText = String.join("\n", tailStderr);
+                    LOGGER.error("ffmpeg transcode failed (exit {}): {}", exitCode, stderrText);
                     throw new FfmpegException(
                             "ffmpeg transcode failed (exit " + exitCode + ")"
-                                    + (stderr.isEmpty() ? "" : ":\n" + stderr));
+                                    + (stderrText.isEmpty() ? "" : ":\n" + stderrText));
                 }
 
                 LOGGER.info("Transcode complete: {}", output);
@@ -248,6 +246,25 @@ public final class FfmpegMuxer {
             Thread.currentThread().interrupt();
             throw new FfmpegException("ffmpeg transcode interrupted", e);
         }
+    }
+
+    /**
+     * Drain {@code stream} line-by-line, keeping only the last {@code maxLines} lines
+     * in a bounded ring buffer (AC-13.4, NFR-FFMPEG-STDERR-LINES).
+     */
+    static List<String> captureLastLines(InputStream stream, int maxLines) throws IOException {
+        ArrayDeque<String> ring = new ArrayDeque<>(maxLines);
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (ring.size() == maxLines) {
+                    ring.pollFirst();
+                }
+                ring.addLast(line);
+            }
+        }
+        return new ArrayList<>(ring);
     }
 
     /**
