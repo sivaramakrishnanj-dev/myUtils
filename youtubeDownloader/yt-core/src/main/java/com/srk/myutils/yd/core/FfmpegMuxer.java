@@ -11,8 +11,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,6 +63,21 @@ public final class FfmpegMuxer {
 
     /** NFR-FFMPEG-STDERR-LINES = 20 trailing lines captured on failure (AC-13.4). */
     static final int FFMPEG_STDERR_LINES = 20;
+
+    /** Grace period (seconds) between SIGTERM and SIGKILL during shutdown (02-architecture.md § 5). */
+    private static final int SHUTDOWN_GRACE_SECONDS = 5;
+
+    /**
+     * All live ffmpeg child processes across all FfmpegMuxer instances.
+     * Registered in {@link #mux}/{@link #transcodeMp3}, deregistered in their finally blocks.
+     * The shutdown hook iterates this set to terminate orphans (INV-8).
+     * Package-private for test access.
+     */
+    static final Set<Process> LIVE_PROCESSES = ConcurrentHashMap.newKeySet();
+
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(FfmpegMuxer::terminateAll, "ffmpeg-shutdown"));
+    }
 
     /** Matches {@code ffmpeg version X.Y.Z} or {@code ffmpeg version N:X.Y.Z} etc. */
     private static final Pattern VERSION_LINE_PATTERN = Pattern.compile("^ffmpeg version (?:\\S+:)?(\\S+)");
@@ -167,6 +186,7 @@ public final class FfmpegMuxer {
             Process process = new ProcessBuilder(command)
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     .start();
+            LIVE_PROCESSES.add(process);
             try {
                 List<String> tailStderr = captureLastLines(process.getErrorStream(), FFMPEG_STDERR_LINES);
                 int exitCode = process.waitFor();
@@ -181,6 +201,7 @@ public final class FfmpegMuxer {
 
                 LOGGER.info("Mux complete: {}", output);
             } finally {
+                LIVE_PROCESSES.remove(process);
                 process.destroy();
             }
         } catch (IOException e) {
@@ -223,6 +244,7 @@ public final class FfmpegMuxer {
             Process process = new ProcessBuilder(command)
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     .start();
+            LIVE_PROCESSES.add(process);
             try {
                 List<String> tailStderr = captureLastLines(process.getErrorStream(), FFMPEG_STDERR_LINES);
                 int exitCode = process.waitFor();
@@ -237,6 +259,7 @@ public final class FfmpegMuxer {
 
                 LOGGER.info("Transcode complete: {}", output);
             } finally {
+                LIVE_PROCESSES.remove(process);
                 process.destroy();
             }
         } catch (IOException e) {
@@ -292,5 +315,39 @@ public final class FfmpegMuxer {
         int minor = Integer.parseInt(numberMatcher.group(2));
         int patch = numberMatcher.group(3) != null ? Integer.parseInt(numberMatcher.group(3)) : 0;
         return new Version(major, minor, patch);
+    }
+
+    // ── Shutdown hook (02-architecture.md § 5, INV-8) ──────────────────
+
+    /**
+     * Terminate all tracked ffmpeg child processes: SIGTERM → 5 s grace → SIGKILL.
+     * Invoked by the JVM shutdown hook registered in the static initializer.
+     * Package-private for testability.
+     */
+    static void terminateAll() {
+        for (Process p : LIVE_PROCESSES) {
+            if (p.isAlive()) {
+                LOGGER.info("Shutdown: sending SIGTERM to ffmpeg child (pid {})", p.pid());
+                p.destroy();
+                try {
+                    if (!p.waitFor(SHUTDOWN_GRACE_SECONDS, TimeUnit.SECONDS) && p.isAlive()) {
+                        LOGGER.warn("Shutdown: ffmpeg child (pid {}) did not exit in {}s — sending SIGKILL",
+                                p.pid(), SHUTDOWN_GRACE_SECONDS);
+                        p.destroyForcibly();
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    p.destroyForcibly();
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns an unmodifiable view of the live-process set.
+     * Package-private — used only by tests to verify registration/deregistration.
+     */
+    static Set<Process> liveProcesses() {
+        return Collections.unmodifiableSet(LIVE_PROCESSES);
     }
 }
