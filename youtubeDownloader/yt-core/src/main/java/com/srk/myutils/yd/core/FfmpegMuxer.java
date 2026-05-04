@@ -1,0 +1,149 @@
+package com.srk.myutils.yd.core;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Integrates with a local {@code ffmpeg} binary for muxing and transcoding
+ * (ADR 0003). T-3.1 implements only {@link #probeVersion()}; T-3.2..T-3.10
+ * add mux, transcode, stderr capture, shutdown, timeout, and CLI wiring.
+ */
+public final class FfmpegMuxer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FfmpegMuxer.class);
+
+    /**
+     * Semantic version parsed from {@code ffmpeg -version} output.
+     */
+    public record Version(int major, int minor, int patch) implements Comparable<Version> {
+
+        public Version {
+            if (major < 0 || minor < 0 || patch < 0) {
+                throw new IllegalArgumentException("Version components must be non-negative");
+            }
+        }
+
+        @Override
+        public int compareTo(Version other) {
+            int c = Integer.compare(this.major, other.major);
+            if (c != 0) return c;
+            c = Integer.compare(this.minor, other.minor);
+            if (c != 0) return c;
+            return Integer.compare(this.patch, other.patch);
+        }
+
+        @Override
+        public String toString() {
+            return major + "." + minor + "." + patch;
+        }
+    }
+
+    /** NFR-MIN-FFMPEG-VERSION = 4.0 */
+    static final Version MIN_VERSION = new Version(4, 0, 0);
+
+    /** Matches {@code ffmpeg version X.Y.Z} or {@code ffmpeg version N:X.Y.Z} etc. */
+    private static final Pattern VERSION_LINE_PATTERN = Pattern.compile("^ffmpeg version (?:\\S+:)?(\\S+)");
+
+    /** Parses "X.Y.Z-suffix", "X.Y.Z", "X.Y" into (major, minor, patch). */
+    private static final Pattern VERSION_NUMBER_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)(?:\\.(\\d+))?");
+
+    private final String ffmpegBinaryPath;
+
+    public FfmpegMuxer() {
+        this("ffmpeg");
+    }
+
+    public FfmpegMuxer(String ffmpegBinaryPath) {
+        this.ffmpegBinaryPath = Objects.requireNonNull(ffmpegBinaryPath, "ffmpegBinaryPath");
+    }
+
+    /**
+     * Probe {@code ffmpeg -version} and verify it is ≥ {@link #MIN_VERSION}.
+     *
+     * @return the detected version
+     * @throws FfmpegException if ffmpeg is not found, exits non-zero,
+     *         outputs an unparseable version, or is below the minimum (AC-13.1, AC-13.2, AC-13.3)
+     */
+    public Version probeVersion() {
+        LOGGER.info("Probing ffmpeg version: {} -version", ffmpegBinaryPath);
+
+        String firstLine;
+        int exitCode;
+        try {
+            Process process = new ProcessBuilder(ffmpegBinaryPath, "-version")
+                    .redirectErrorStream(true)
+                    .start();
+            try {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                    firstLine = reader.readLine();
+                }
+
+                exitCode = process.waitFor();
+            } finally {
+                process.destroy();
+            }
+        } catch (IOException e) {
+            LOGGER.error("ffmpeg probe failed: {}", e.getMessage());
+            throw new FfmpegException(
+                    "ffmpeg not found on PATH or version check failed. "
+                            + "Install ffmpeg from https://ffmpeg.org/ and ensure it is on PATH.", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new FfmpegException(
+                    "ffmpeg not found on PATH or version check failed. "
+                            + "Install ffmpeg from https://ffmpeg.org/ and ensure it is on PATH.", e);
+        }
+
+        if (exitCode != 0 || firstLine == null) {
+            throw new FfmpegException(
+                    "ffmpeg not found on PATH or version check failed. "
+                            + "Install ffmpeg from https://ffmpeg.org/ and ensure it is on PATH.");
+        }
+
+        Version version = parseVersion(firstLine);
+        LOGGER.info("Detected ffmpeg version: {}", version);
+
+        if (version.compareTo(MIN_VERSION) < 0) {
+            throw new FfmpegException(
+                    "detected version " + version + ", but version " + MIN_VERSION + " or higher is required.");
+        }
+
+        return version;
+    }
+
+    /**
+     * Parse the first line of {@code ffmpeg -version} output into a {@link Version}.
+     *
+     * @throws FfmpegException if the line does not match the expected pattern
+     */
+    private static Version parseVersion(String firstLine) {
+        Matcher lineMatcher = VERSION_LINE_PATTERN.matcher(firstLine);
+        if (!lineMatcher.find()) {
+            throw new FfmpegException(
+                    "ffmpeg not found on PATH or version check failed. "
+                            + "Install ffmpeg from https://ffmpeg.org/ and ensure it is on PATH.");
+        }
+
+        String versionToken = lineMatcher.group(1);
+        Matcher numberMatcher = VERSION_NUMBER_PATTERN.matcher(versionToken);
+        if (!numberMatcher.find()) {
+            throw new FfmpegException(
+                    "ffmpeg not found on PATH or version check failed. "
+                            + "Install ffmpeg from https://ffmpeg.org/ and ensure it is on PATH.");
+        }
+
+        int major = Integer.parseInt(numberMatcher.group(1));
+        int minor = Integer.parseInt(numberMatcher.group(2));
+        int patch = numberMatcher.group(3) != null ? Integer.parseInt(numberMatcher.group(3)) : 0;
+        return new Version(major, minor, patch);
+    }
+}
