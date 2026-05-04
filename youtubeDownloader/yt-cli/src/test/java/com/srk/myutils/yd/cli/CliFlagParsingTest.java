@@ -1,0 +1,19 @@
+package com.srk.myutils.yd.cli;
+
+import org.junit.jupiter.api.Test;
+import picocli.CommandLine;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Characterization test for T-1.11 — CLI flag parsing of URL, --debug, --quiet.
+ */
+class CliFlagParsingTest {
+
+    @Test
+    void execute_givenValidUrl_exitsZero() {
+        var cmd = new CommandLine(new Cli());
+        int exitCode = cmd.execute("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        assertThat(exitCode).isZero();
+    }
+}

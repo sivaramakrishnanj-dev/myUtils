@@ -53,10 +53,11 @@ class CliTest {
     }
 
     @Test
-    void execute_givenNoArgs_exitsZero() {
+    void execute_givenNoArgs_exitsNonZero() {
         int exitCode = cmd.execute();
 
-        assertThat(exitCode).isZero();
+        assertThat(exitCode).isNotZero();
+        assertThat(stderr.toString()).contains("Missing required parameter");
     }
 
     @Test
