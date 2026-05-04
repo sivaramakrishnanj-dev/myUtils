@@ -41,11 +41,10 @@ public final class YoutubeDownloader {
     /**
      * Resolves a YouTube URL and returns download metadata.
      *
-     * <p>M1: parse URL, fetch InnerTube, extract player response, check
-     * playability, return stub result. Media download is M2+.
+     * <p>Convenience overload that uses {@link ProgressListener#NO_OP}.
      *
      * @param url raw YouTube URL
-     * @return download result with video metadata (no files in M1)
+     * @return download result with video metadata
      * @throws UrlParseException         if the URL is invalid (exit 2)
      * @throws NetworkException          on network failure (exit 10)
      * @throws InnerTubeParseException   on response parse error (exit 11)
@@ -53,6 +52,26 @@ public final class YoutubeDownloader {
      * @throws LiveStreamException       if the video is live (exit 21)
      */
     public DownloadResult download(String url) {
+        return download(url, ProgressListener.NO_OP);
+    }
+
+    /**
+     * Resolves a YouTube URL and returns download metadata.
+     *
+     * <p>M1: parse URL, fetch InnerTube, extract player response, check
+     * playability, return stub result. Media download (M2+) will forward
+     * {@code listener} to {@code StreamDownloader}.
+     *
+     * @param url      raw YouTube URL
+     * @param listener progress callback; use {@link ProgressListener#NO_OP} to suppress
+     * @return download result with video metadata (no files in M1)
+     * @throws UrlParseException         if the URL is invalid (exit 2)
+     * @throws NetworkException          on network failure (exit 10)
+     * @throws InnerTubeParseException   on response parse error (exit 11)
+     * @throws VideoUnavailableException if the video is unavailable (exit 20)
+     * @throws LiveStreamException       if the video is live (exit 21)
+     */
+    public DownloadResult download(String url, ProgressListener listener) {
         LOGGER.info("Starting download for URL: {}", url);
 
         VideoId videoId = urlParser.parse(url);

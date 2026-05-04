@@ -3,6 +3,7 @@ package com.srk.myutils.yd.cli;
 import com.srk.myutils.yd.core.DownloadResult;
 import com.srk.myutils.yd.core.ErrorMapper;
 import com.srk.myutils.yd.core.ErrorReport;
+import com.srk.myutils.yd.core.ProgressListener;
 import com.srk.myutils.yd.core.YoutubeDownloader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,8 +56,9 @@ public final class Cli implements Callable<Integer> {
 
     @Override
     public Integer call() {
+        ProgressListener listener = quiet ? ProgressListener.NO_OP : new StderrProgressListener();
         try {
-            DownloadResult result = downloader.download(url);
+            DownloadResult result = downloader.download(url, listener);
             LOGGER.info("Downloaded: videoId={} title={}",
                     result.videoId().value(), result.title());
             return 0;
@@ -69,6 +71,10 @@ public final class Cli implements Callable<Integer> {
                 t.printStackTrace(err);
             }
             return report.exitCode();
+        } finally {
+            if (listener instanceof AutoCloseable ac) {
+                try { ac.close(); } catch (Exception ignored) { }
+            }
         }
     }
 
