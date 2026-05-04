@@ -40,6 +40,56 @@ public final class PlayerResponseExtractor {
     private PlayerResponseExtractor() { }
 
     /**
+     * Post-parse playability check — validates that the video is downloadable.
+     *
+     * <p>Must be called <em>after</em> {@link #extract(String)}. Throws the
+     * appropriate exception per AC-5.2 category mapping:
+     * <ul>
+     *   <li>Exit 21 ({@link LiveStreamException}): {@code isLive == true} OR
+     *       {@code LIVE_STREAM_OFFLINE} (AC-1.7)</li>
+     *   <li>Exit 20 ({@link VideoUnavailableException}): {@code UNPLAYABLE},
+     *       {@code LOGIN_REQUIRED}, {@code AGE_VERIFICATION_REQUIRED},
+     *       {@code ERROR}</li>
+     *   <li>Exit 11 ({@link InnerTubeParseException}): {@code UNKNOWN}
+     *       (unrecognized status — response shape may have changed)</li>
+     * </ul>
+     *
+     * @param response parsed player response
+     * @return the same response, for fluent chaining
+     * @throws LiveStreamException       if the video is live or not-yet-premiered
+     * @throws VideoUnavailableException if the video is private, deleted, or geo-blocked
+     * @throws InnerTubeParseException   if the playability status is unrecognized
+     */
+    public static PlayerResponse checkPlayability(PlayerResponse response) {
+        PlayabilityStatus status = response.playabilityStatus();
+        VideoDetails details = response.videoDetails();
+
+        // AC-1.7: live stream check (exit 21)
+        if (details.isLive() || status == PlayabilityStatus.LIVE_STREAM_OFFLINE) {
+            throw new LiveStreamException(
+                    "Live streams are not supported in this MVP: " + details.videoId().value());
+        }
+
+        // AC-5.2 category 20: video unavailable
+        if (status == PlayabilityStatus.UNPLAYABLE
+                || status == PlayabilityStatus.LOGIN_REQUIRED
+                || status == PlayabilityStatus.AGE_VERIFICATION_REQUIRED
+                || status == PlayabilityStatus.ERROR) {
+            throw new VideoUnavailableException(
+                    "Video unavailable (" + status + "): " + details.videoId().value());
+        }
+
+        // UNKNOWN → exit 11 (parse error, not unavailable)
+        if (status == PlayabilityStatus.UNKNOWN) {
+            throw new InnerTubeParseException(
+                    "Unknown playabilityStatus — response shape may have changed");
+        }
+
+        // status == OK — pass through
+        return response;
+    }
+
+    /**
      * Parses the given JSON string into a {@link PlayerResponse}.
      *
      * @param json raw InnerTube response body (UTF-8 string)
