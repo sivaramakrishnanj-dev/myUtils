@@ -1,9 +1,12 @@
 package com.srk.myutils.yd.cli;
 
+import com.srk.myutils.yd.core.DownloadRequest;
 import com.srk.myutils.yd.core.DownloadResult;
 import com.srk.myutils.yd.core.ErrorMapper;
 import com.srk.myutils.yd.core.ErrorReport;
+import com.srk.myutils.yd.core.OutputConfig;
 import com.srk.myutils.yd.core.ProgressListener;
+import com.srk.myutils.yd.core.UrlParseException;
 import com.srk.myutils.yd.core.YoutubeDownloader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +16,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.io.PrintWriter;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 /**
@@ -44,6 +48,10 @@ public final class Cli implements Callable<Integer> {
     @Option(names = "--quiet", description = "Suppress progress output")
     private boolean quiet;
 
+    @Option(names = "--max-height", description = "Maximum video height; 0 = uncapped (default: ${DEFAULT-VALUE})",
+            defaultValue = "1080")
+    private int maxHeight;
+
     /** Default constructor — uses production {@link YoutubeDownloader}. */
     public Cli() {
         this(YoutubeDownloader.create());
@@ -58,7 +66,16 @@ public final class Cli implements Callable<Integer> {
     public Integer call() {
         ProgressListener listener = quiet ? ProgressListener.NO_OP : new StderrProgressListener();
         try {
-            DownloadResult result = downloader.download(url, listener);
+            if (maxHeight < 0) {
+                throw new UrlParseException("--max-height must be >= 0");
+            }
+            DownloadRequest request = new DownloadRequest(
+                    url,
+                    false,
+                    maxHeight,
+                    new OutputConfig(Optional.empty(), Optional.empty(), false),
+                    listener);
+            DownloadResult result = downloader.download(request);
             LOGGER.info("Downloaded: videoId={} title={}",
                     result.videoId().value(), result.title());
             return 0;

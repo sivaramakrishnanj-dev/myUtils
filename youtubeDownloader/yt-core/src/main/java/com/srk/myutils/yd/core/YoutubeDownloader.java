@@ -94,6 +94,7 @@ public final class YoutubeDownloader {
         return download(new DownloadRequest(
                 url,
                 false,
+                DownloadRequest.DEFAULT_MAX_HEIGHT,
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 listener));
     }

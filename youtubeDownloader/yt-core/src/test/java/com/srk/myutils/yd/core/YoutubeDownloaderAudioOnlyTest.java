@@ -75,6 +75,7 @@ class YoutubeDownloaderAudioOnlyTest {
         DownloadRequest request = new DownloadRequest(
                 "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 true,
+                0,
                 output,
                 ProgressListener.NO_OP);
 
