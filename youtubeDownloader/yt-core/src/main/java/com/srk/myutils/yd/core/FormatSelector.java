@@ -35,6 +35,19 @@ public final class FormatSelector {
     private static final Logger LOGGER = LoggerFactory.getLogger(FormatSelector.class);
 
     /**
+     * Selects the best audio format only — no video (AC-2.1).
+     *
+     * @param formats adaptive formats from {@link PlayerResponse#adaptiveFormats()}
+     * @return a {@link FormatSelection} with {@code video == null} and the chosen audio
+     * @throws NoMatchingFormatException if no suitable audio format is found (exit 30)
+     */
+    public FormatSelection selectAudioOnly(List<Format> formats) {
+        Format audio = selectAudio(formats);
+        LOGGER.info("Audio-only format selected: itag={} {}bps", audio.itag(), audio.bitrate());
+        return new FormatSelection(null, audio);
+    }
+
+    /**
      * Selects the best video + audio format pair from the given formats.
      *
      * @param formats   adaptive formats from {@link PlayerResponse#adaptiveFormats()}

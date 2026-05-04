@@ -158,7 +158,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenNullUrl_throwsUrlParseException() {
             YoutubeDownloader sut = downloaderReturning(200, "should-not-be-reached");
 
-            assertThatThrownBy(() -> sut.download(null))
+            assertThatThrownBy(() -> sut.download((String) null))
                     .isInstanceOf(UrlParseException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(2));
         }
