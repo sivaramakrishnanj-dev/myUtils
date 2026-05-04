@@ -71,19 +71,19 @@ public final class StreamDownloader {
     private static final Sleeper DEFAULT_SLEEPER = Thread::sleep;
 
     /**
-     * Callback for byte-progress events during a stream download.
-     * Implementations must be safe for frequent invocation (once per 64 KB chunk).
+     * @deprecated Use top-level {@link ProgressListener} instead. Kept temporarily
+     *             so that any in-flight references compile; will be removed.
      */
-    public interface ProgressCallback {
-        /**
-         * @param bytesWritten total bytes written to the {@code .part} file so far
-         * @param totalBytes   total expected bytes, or {@code -1} if unknown
-         */
-        void onProgress(long bytesWritten, long totalBytes);
-    }
+    @Deprecated
+    public interface ProgressCallback extends ProgressListener {}
 
-    /** A no-op callback for callers that do not need progress events. */
-    public static final ProgressCallback NO_OP = (b, t) -> {};
+    /**
+     * A no-op listener for callers that do not need progress events.
+     *
+     * @deprecated Use {@link ProgressListener#NO_OP} instead.
+     */
+    @Deprecated
+    public static final ProgressListener NO_OP = ProgressListener.NO_OP;
 
     private final OkHttpClient httpClient;
     private final Sleeper sleeper;
@@ -132,7 +132,7 @@ public final class StreamDownloader {
      * @param callback progress callback; use {@link #NO_OP} to ignore
      * @throws NetworkException on HTTP error or I/O failure after retries exhausted
      */
-    public void download(String url, Path partFile, ProgressCallback callback) {
+    public void download(String url, Path partFile, ProgressListener callback) {
         long bytesAtStart = existingFileSize(partFile);
         NetworkException lastFailure = null;
 
@@ -173,7 +173,7 @@ public final class StreamDownloader {
      * Executes a single download attempt.
      */
     private void doDownload(String url, Path partFile, long existingBytes,
-                            ProgressCallback callback) {
+                            ProgressListener callback) {
         Request.Builder reqBuilder = new Request.Builder()
                 .url(url)
                 .header("User-Agent", USER_AGENT);
@@ -263,7 +263,7 @@ public final class StreamDownloader {
      * Calls {@code callback} after each buffer write.
      */
     private void writeBody(InputStream in, Path partFile, long existingBytes,
-                           long totalBytes, ProgressCallback callback) throws IOException {
+                           long totalBytes, ProgressListener callback) throws IOException {
         StandardOpenOption[] opts = existingBytes > 0
                 ? new StandardOpenOption[]{StandardOpenOption.WRITE, StandardOpenOption.APPEND}
                 : new StandardOpenOption[]{StandardOpenOption.CREATE, StandardOpenOption.WRITE,

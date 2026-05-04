@@ -81,7 +81,7 @@ class StreamDownloaderBehaviorTest {
     }
 
     /** Collects (bytesWritten, totalBytes) pairs from progress callbacks. */
-    private static final class ProgressRecorder implements StreamDownloader.ProgressCallback {
+    private static final class ProgressRecorder implements ProgressListener {
         final List<long[]> events = new ArrayList<>();
 
         @Override

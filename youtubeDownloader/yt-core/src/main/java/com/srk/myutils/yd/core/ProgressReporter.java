@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>{@code onProgress} only stores the latest snapshot; the scheduled executor
  * periodically renders it. This decouples the update rate from the write rate.
  *
- * @see StreamDownloader.ProgressCallback
+ * @see ProgressListener
  */
-public final class ProgressReporter implements StreamDownloader.ProgressCallback, AutoCloseable {
+public final class ProgressReporter implements ProgressListener, AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProgressReporter.class);
 
