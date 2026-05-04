@@ -1,9 +1,9 @@
 package com.srk.myutils.yd.cli;
 
+import com.srk.myutils.yd.core.DownloadResult;
 import com.srk.myutils.yd.core.ErrorMapper;
 import com.srk.myutils.yd.core.ErrorReport;
-import com.srk.myutils.yd.core.UrlParser;
-import com.srk.myutils.yd.core.VideoId;
+import com.srk.myutils.yd.core.YoutubeDownloader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -17,7 +17,7 @@ import java.util.concurrent.Callable;
 /**
  * Picocli entrypoint for the youtube-downloader CLI.
  * M1 scope: URL positional parameter, {@code --debug}, {@code --quiet},
- * error-handling pipeline (T-1.12, AC-5.1..AC-5.5).
+ * error-handling pipeline (T-1.12, AC-5.1..AC-5.5), orchestrator wiring (T-1.14).
  */
 @Command(
         name = "youtube-downloader",
@@ -28,6 +28,8 @@ import java.util.concurrent.Callable;
 public final class Cli implements Callable<Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Cli.class);
+
+    private final YoutubeDownloader downloader;
 
     @CommandLine.Spec
     private CommandLine.Model.CommandSpec spec;
@@ -41,12 +43,22 @@ public final class Cli implements Callable<Integer> {
     @Option(names = "--quiet", description = "Suppress progress output")
     private boolean quiet;
 
+    /** Default constructor — uses production {@link YoutubeDownloader}. */
+    public Cli() {
+        this(YoutubeDownloader.create());
+    }
+
+    /** Package-private constructor for test injection. */
+    Cli(YoutubeDownloader downloader) {
+        this.downloader = downloader;
+    }
+
     @Override
     public Integer call() {
         try {
-            VideoId videoId = new UrlParser().parse(url);
-            LOGGER.info("Parsed video id: {}", videoId.value());
-            // T-1.14 adds: YoutubeDownloader.download(videoId, config)
+            DownloadResult result = downloader.download(url);
+            LOGGER.info("Downloaded: videoId={} title={}",
+                    result.videoId().value(), result.title());
             return 0;
         } catch (Throwable t) {
             PrintWriter err = spec.commandLine().getErr();

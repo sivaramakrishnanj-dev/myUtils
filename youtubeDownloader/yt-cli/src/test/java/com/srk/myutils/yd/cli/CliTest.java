@@ -21,7 +21,7 @@ class CliTest {
 
     @BeforeEach
     void setUp() {
-        cmd = new CommandLine(new Cli());
+        cmd = new CommandLine(new Cli(FakeDownloaderFactory.happyPath()));
         stdout = new StringWriter();
         stderr = new StringWriter();
         cmd.setOut(new PrintWriter(stdout));

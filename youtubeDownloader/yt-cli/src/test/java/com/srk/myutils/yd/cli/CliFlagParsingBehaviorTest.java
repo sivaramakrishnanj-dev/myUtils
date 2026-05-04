@@ -31,7 +31,7 @@ class CliFlagParsingBehaviorTest {
 
     @BeforeEach
     void setUp() {
-        cli = new Cli();
+        cli = new Cli(FakeDownloaderFactory.happyPath());
         cmd = new CommandLine(cli);
         stdout = new StringWriter();
         stderr = new StringWriter();

@@ -12,7 +12,7 @@ class CliFlagParsingTest {
 
     @Test
     void execute_givenValidUrl_exitsZero() {
-        var cmd = new CommandLine(new Cli());
+        var cmd = new CommandLine(new Cli(FakeDownloaderFactory.happyPath()));
         int exitCode = cmd.execute("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
         assertThat(exitCode).isZero();
     }

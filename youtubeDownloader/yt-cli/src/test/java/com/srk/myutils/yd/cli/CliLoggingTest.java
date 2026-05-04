@@ -55,7 +55,7 @@ class CliLoggingTest {
     }
 
     private int executeCliWithStderrCapture(String... args) {
-        CommandLine cmd = new CommandLine(new Cli());
+        CommandLine cmd = new CommandLine(new Cli(FakeDownloaderFactory.happyPath()));
         StringWriter stdout = new StringWriter();
         // Route picocli's own stderr to the captured stream so it merges
         cmd.setOut(new PrintWriter(stdout));
