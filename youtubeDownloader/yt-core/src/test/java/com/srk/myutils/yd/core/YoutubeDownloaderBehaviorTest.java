@@ -8,12 +8,15 @@ import okhttp3.ResponseBody;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,7 +37,33 @@ class YoutubeDownloaderBehaviorTest {
     private static final String VALID_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
     private static final MediaType JSON_TYPE = MediaType.get("application/json");
 
+    @TempDir
+    Path tempDir;
+
     // ── helpers ──────────────────────────────────────────────────────
+
+    private static final MediaType OCTET = MediaType.get("application/octet-stream");
+    private static final byte[] FAKE_BYTES = {0x00, 0x01, 0x02, 0x03};
+
+    /**
+     * Creates a metadata-only request (audio-only with output dir) for tests
+     * that verify URL parsing, InnerTube fetch, and playability checks without
+     * triggering the full download/mux flow.
+     */
+    private static DownloadRequest metadataOnlyRequest(String url, Path outputDir) {
+        return new DownloadRequest(url, true, 0, Optional.empty(),
+                new OutputConfig(Optional.empty(), Optional.of(outputDir), false),
+                ProgressListener.NO_OP, false);
+    }
+
+    /**
+     * Overload for error-path tests where the request never reaches the download step.
+     */
+    private static DownloadRequest metadataOnlyRequest(String url) {
+        return new DownloadRequest(url, true, 0, Optional.empty(),
+                new OutputConfig(Optional.empty(), Optional.empty(), false),
+                ProgressListener.NO_OP, false);
+    }
 
     private static YoutubeDownloader downloaderReturning(int httpStatus, String body) {
         OkHttpClient fakeHttp = new OkHttpClient.Builder()
@@ -50,7 +79,30 @@ class YoutubeDownloaderBehaviorTest {
     }
 
     private static YoutubeDownloader downloaderWithFixture(String fixturePath) {
-        return downloaderReturning(200, loadFixture(fixturePath));
+        OkHttpClient fakeInnerTubeHttp = new OkHttpClient.Builder()
+                .addInterceptor(chain -> new Response.Builder()
+                        .request(chain.request())
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(200)
+                        .message("OK")
+                        .body(ResponseBody.create(loadFixture(fixturePath), JSON_TYPE))
+                        .build())
+                .build();
+        OkHttpClient fakeStreamHttp = new OkHttpClient.Builder()
+                .addInterceptor(chain -> new Response.Builder()
+                        .request(chain.request())
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(200)
+                        .message("OK")
+                        .header("Content-Length", String.valueOf(FAKE_BYTES.length))
+                        .body(ResponseBody.create(FAKE_BYTES, OCTET))
+                        .build())
+                .build();
+        return new YoutubeDownloader(
+                new UrlParser(),
+                new InnerTubeClient(fakeInnerTubeHttp),
+                new FormatSelector(),
+                new StreamDownloader(fakeStreamHttp));
     }
 
     private static String loadFixture(String resourcePath) {
@@ -75,13 +127,13 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenHappyFixture_returnsMetadataWithNoPaths() {
             YoutubeDownloader sut = downloaderWithFixture("/fixtures/innertube-response-happy.json");
 
-            DownloadResult result = sut.download(VALID_URL);
+            DownloadResult result = sut.download(metadataOnlyRequest(VALID_URL, tempDir));
 
             assertThat(result.videoId().value()).isEqualTo("dQw4w9WgXcQ");
             assertThat(result.title()).isEqualTo(
                     "Rick Astley - Never Gonna Give You Up (Official Music Video)");
             assertThat(result.videoPath()).isEmpty();
-            assertThat(result.audioPath()).isEmpty();
+            assertThat(result.audioPath()).isPresent();
             assertThat(result.srtPath()).isEmpty();
             assertThat(result.txtPath()).isEmpty();
             assertThat(result.thumbnailPath()).isEmpty();
@@ -99,7 +151,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenAllUrlShapes_parsesVideoId(String url) {
             YoutubeDownloader sut = downloaderWithFixture("/fixtures/innertube-response-happy.json");
 
-            DownloadResult result = sut.download(url);
+            DownloadResult result = sut.download(metadataOnlyRequest(url, tempDir));
 
             assertThat(result.videoId().value()).isEqualTo("dQw4w9WgXcQ");
         }
@@ -109,8 +161,8 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenUrlWithExtraParams_parsesVideoId() {
             YoutubeDownloader sut = downloaderWithFixture("/fixtures/innertube-response-happy.json");
 
-            DownloadResult result = sut.download(
-                    "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf");
+            DownloadResult result = sut.download(metadataOnlyRequest(
+                    "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf", tempDir));
 
             assertThat(result.videoId().value()).isEqualTo("dQw4w9WgXcQ");
         }
@@ -127,7 +179,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenUnplayableVideo_throwsVideoUnavailableException() {
             YoutubeDownloader sut = downloaderWithFixture("/fixtures/innertube-response-unplayable.json");
 
-            assertThatThrownBy(() -> sut.download("https://www.youtube.com/watch?v=privprivpr1"))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest("https://www.youtube.com/watch?v=privprivpr1")))
                     .isInstanceOf(VideoUnavailableException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(20));
         }
@@ -137,7 +189,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenLiveStream_throwsLiveStreamException() {
             YoutubeDownloader sut = downloaderWithFixture("/fixtures/innertube-response-live.json");
 
-            assertThatThrownBy(() -> sut.download("https://www.youtube.com/watch?v=livelivelv1"))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest("https://www.youtube.com/watch?v=livelivelv1")))
                     .isInstanceOf(LiveStreamException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(21));
         }
@@ -148,7 +200,7 @@ class YoutubeDownloaderBehaviorTest {
             // Interceptor that would fail if called — proves no network call is made
             YoutubeDownloader sut = downloaderReturning(200, "should-not-be-reached");
 
-            assertThatThrownBy(() -> sut.download("not-a-url"))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest("not-a-url")))
                     .isInstanceOf(UrlParseException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(2));
         }
@@ -158,7 +210,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenNullUrl_throwsUrlParseException() {
             YoutubeDownloader sut = downloaderReturning(200, "should-not-be-reached");
 
-            assertThatThrownBy(() -> sut.download((String) null))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest(null)))
                     .isInstanceOf(UrlParseException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(2));
         }
@@ -175,7 +227,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenHttp500_throwsNetworkException() {
             YoutubeDownloader sut = downloaderReturning(500, "{}");
 
-            assertThatThrownBy(() -> sut.download(VALID_URL))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest(VALID_URL)))
                     .isInstanceOf(NetworkException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(10))
                     .hasMessageContaining("500");
@@ -186,7 +238,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenHttp404_throwsNetworkException() {
             YoutubeDownloader sut = downloaderReturning(404, "{}");
 
-            assertThatThrownBy(() -> sut.download(VALID_URL))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest(VALID_URL)))
                     .isInstanceOf(NetworkException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(10))
                     .hasMessageContaining("404");
@@ -197,7 +249,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenHttp403_throwsNetworkException() {
             YoutubeDownloader sut = downloaderReturning(403, "{}");
 
-            assertThatThrownBy(() -> sut.download(VALID_URL))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest(VALID_URL)))
                     .isInstanceOf(NetworkException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(10));
         }
@@ -214,7 +266,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenBrokenJson_throwsInnerTubeParseException() {
             YoutubeDownloader sut = downloaderReturning(200, "{not valid json!!!");
 
-            assertThatThrownBy(() -> sut.download(VALID_URL))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest(VALID_URL)))
                     .isInstanceOf(InnerTubeParseException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(11));
         }
@@ -225,7 +277,7 @@ class YoutubeDownloaderBehaviorTest {
             String json = "{\"playabilityStatus\":{\"status\":\"OK\"}}";
             YoutubeDownloader sut = downloaderReturning(200, json);
 
-            assertThatThrownBy(() -> sut.download(VALID_URL))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest(VALID_URL)))
                     .isInstanceOf(InnerTubeParseException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(11))
                     .hasMessageContaining("videoDetails");
@@ -239,7 +291,7 @@ class YoutubeDownloaderBehaviorTest {
                     + "\"thumbnail\":{\"thumbnails\":[{\"url\":\"u\",\"width\":1,\"height\":1}]}}}";
             YoutubeDownloader sut = downloaderReturning(200, json);
 
-            assertThatThrownBy(() -> sut.download(VALID_URL))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest(VALID_URL)))
                     .isInstanceOf(InnerTubeParseException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(11))
                     .hasMessageContaining("playabilityStatus");
@@ -250,7 +302,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenEmptyBody_throwsInnerTubeParseException() {
             YoutubeDownloader sut = downloaderReturning(200, "");
 
-            assertThatThrownBy(() -> sut.download(VALID_URL))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest(VALID_URL)))
                     .isInstanceOf(InnerTubeParseException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(11));
         }
@@ -270,7 +322,7 @@ class YoutubeDownloaderBehaviorTest {
             // parsing happens first.
             YoutubeDownloader sut = downloaderWithFixture("/fixtures/innertube-response-happy.json");
 
-            assertThatThrownBy(() -> sut.download("garbage"))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest("garbage")))
                     .isInstanceOf(UrlParseException.class);
         }
 
@@ -296,10 +348,24 @@ class YoutubeDownloaderBehaviorTest {
                     })
                     .build();
 
-            YoutubeDownloader sut = new YoutubeDownloader(
-                    new UrlParser(), new InnerTubeClient(fakeHttp));
+            OkHttpClient fakeStreamHttp = new OkHttpClient.Builder()
+                    .addInterceptor(chain -> new Response.Builder()
+                            .request(chain.request())
+                            .protocol(Protocol.HTTP_1_1)
+                            .code(200)
+                            .message("OK")
+                            .header("Content-Length", String.valueOf(FAKE_BYTES.length))
+                            .body(ResponseBody.create(FAKE_BYTES, OCTET))
+                            .build())
+                    .build();
 
-            sut.download(VALID_URL);
+            YoutubeDownloader sut = new YoutubeDownloader(
+                    new UrlParser(),
+                    new InnerTubeClient(fakeHttp),
+                    new FormatSelector(),
+                    new StreamDownloader(fakeStreamHttp));
+
+            sut.download(metadataOnlyRequest(VALID_URL, tempDir));
 
             assertThat(capturedBody[0]).contains("\"videoId\":\"dQw4w9WgXcQ\"");
         }
@@ -311,7 +377,7 @@ class YoutubeDownloaderBehaviorTest {
             // If checkPlayability didn't run, no exception would be thrown.
             YoutubeDownloader sut = downloaderWithFixture("/fixtures/innertube-response-unplayable.json");
 
-            assertThatThrownBy(() -> sut.download("https://www.youtube.com/watch?v=privprivpr1"))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest("https://www.youtube.com/watch?v=privprivpr1")))
                     .isInstanceOf(VideoUnavailableException.class);
         }
 
@@ -320,7 +386,7 @@ class YoutubeDownloaderBehaviorTest {
         void download_givenHappyFixture_resultAssembledFromResponse() {
             YoutubeDownloader sut = downloaderWithFixture("/fixtures/innertube-response-happy.json");
 
-            DownloadResult result = sut.download(VALID_URL);
+            DownloadResult result = sut.download(metadataOnlyRequest(VALID_URL, tempDir));
 
             // Title comes from PlayerResponse.videoDetails.title, proving
             // extract → result assembly chain works
@@ -343,7 +409,7 @@ class YoutubeDownloaderBehaviorTest {
             // exception proves AC-9.2.
             YoutubeDownloader sut = downloaderReturning(500, "{}");
 
-            assertThatThrownBy(() -> sut.download(VALID_URL))
+            assertThatThrownBy(() -> sut.download(metadataOnlyRequest(VALID_URL)))
                     .isInstanceOf(YoutubeDownloaderException.class);
         }
     }

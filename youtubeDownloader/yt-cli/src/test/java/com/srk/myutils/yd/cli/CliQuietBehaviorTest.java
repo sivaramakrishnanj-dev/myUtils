@@ -3,12 +3,14 @@ package com.srk.myutils.yd.cli;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import java.nio.file.Path;
 
 /**
  * Comprehensive tests for T-2.7 — {@code --quiet} suppresses progress (AC-4.4).
@@ -25,6 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * picocli {@link CommandLine} with {@link StringWriter} for stderr capture.
  */
 class CliQuietBehaviorTest {
+
+    @TempDir
+    Path tempDir;
 
     private static final String VALID_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
     private static final String INVALID_URL = "not-a-youtube-url";
@@ -47,7 +52,7 @@ class CliQuietBehaviorTest {
     @Test
     @DisplayName("AC-4.4: --quiet + valid URL → exit 0, no output on picocli stderr")
     void call_givenQuietAndValidUrl_exitsZeroWithEmptyStderr() {
-        int exitCode = cmd.execute("--quiet", VALID_URL);
+        int exitCode = cmd.execute("--quiet", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
         assertThat(stderr.toString()).isEmpty();
@@ -58,7 +63,7 @@ class CliQuietBehaviorTest {
     @Test
     @DisplayName("Without --quiet, valid URL → exit 0 (StderrProgressListener lifecycle completes)")
     void call_withoutQuietAndValidUrl_exitsZero() {
-        int exitCode = cmd.execute(VALID_URL);
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
     }
@@ -92,7 +97,7 @@ class CliQuietBehaviorTest {
     @Test
     @DisplayName("--quiet is a valid picocli flag — no 'Unknown option' error")
     void call_givenQuietFlag_noUnknownOptionError() {
-        int exitCode = cmd.execute("--quiet", VALID_URL);
+        int exitCode = cmd.execute("--quiet", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(stderr.toString()).doesNotContain("Unknown option");
         assertThat(exitCode).isZero();

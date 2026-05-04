@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import picocli.CommandLine;
@@ -12,6 +13,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import java.nio.file.Path;
 
 /**
  * Comprehensive CLI flag-parsing tests for T-1.11 (AC-5.1, AC-5.4, AC-5.5).
@@ -23,6 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>SUT: {@link Cli} — real instance, no mocks.
  */
 class CliFlagParsingBehaviorTest {
+
+    @TempDir
+    Path tempDir;
 
     private CommandLine cmd;
     private Cli cli;
@@ -54,7 +59,7 @@ class CliFlagParsingBehaviorTest {
                 "https://m.youtube.com/watch?v=dQw4w9WgXcQ"
         })
         void execute_givenValidUrlShape_exitsZero(String url) {
-            int exitCode = cmd.execute(url);
+            int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", url);
 
             assertThat(exitCode).isZero();
         }
@@ -76,7 +81,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("Invalid URL (non-YouTube) → non-zero exit")
     void execute_givenNonYoutubeUrl_exitsNonZero() {
-        int exitCode = cmd.execute("https://google.com");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "https://google.com");
 
         assertThat(exitCode).isNotZero();
     }
@@ -86,7 +91,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("AC-5.4: --debug flag sets isDebug() true; exit 0")
     void execute_givenDebugFlag_setsDebugTrue() {
-        int exitCode = cmd.execute("--debug", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "--debug", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
         assertThat(exitCode).isZero();
         assertThat(cli.isDebug()).isTrue();
@@ -97,7 +102,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("AC-5.5: --quiet flag sets isQuiet() true; exit 0")
     void execute_givenQuietFlag_setsQuietTrue() {
-        int exitCode = cmd.execute("--quiet", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "--quiet", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
         assertThat(exitCode).isZero();
         assertThat(cli.isQuiet()).isTrue();
@@ -108,7 +113,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("--debug and --quiet together → both flags set; exit 0")
     void execute_givenDebugAndQuiet_setsBothFlags() {
-        int exitCode = cmd.execute("--debug", "--quiet", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "--debug", "--quiet", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
         assertThat(exitCode).isZero();
         assertThat(cli.isDebug()).isTrue();
@@ -120,7 +125,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("No flags → isDebug() and isQuiet() both false")
     void execute_givenNoFlags_defaultsBothFalse() {
-        int exitCode = cmd.execute("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
         assertThat(exitCode).isZero();
         assertThat(cli.isDebug()).isFalse();
@@ -132,7 +137,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("--debug --quiet URL in any order parseable")
     void execute_givenFlagsBeforeUrl_parsesCorrectly() {
-        int exitCode = cmd.execute("--quiet", "--debug", "https://youtu.be/dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "--quiet", "--debug", "https://youtu.be/dQw4w9WgXcQ");
 
         assertThat(exitCode).isZero();
         assertThat(cli.isDebug()).isTrue();
@@ -144,7 +149,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("Unknown flag --foo → non-zero exit; stderr non-empty")
     void execute_givenUnknownFlag_exitsNonZero() {
-        int exitCode = cmd.execute("--foo", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "--foo", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
         assertThat(exitCode).isNotZero();
         assertThat(stderr.toString()).isNotEmpty();
@@ -155,7 +160,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("URL before flags — picocli handles positional + trailing options")
     void execute_givenUrlBeforeFlags_parsesCorrectly() {
-        int exitCode = cmd.execute("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "--debug");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "--debug");
 
         assertThat(exitCode).isZero();
         assertThat(cli.isDebug()).isTrue();
@@ -166,7 +171,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("--help with URL → help short-circuits; exit 0; no URL processing")
     void execute_givenHelpWithUrl_exitsZeroWithUsage() {
-        int exitCode = cmd.execute("--help", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "--help", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
         assertThat(exitCode).isZero();
         assertThat(stdout.toString()).contains("Usage:");
@@ -177,7 +182,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("--version with URL → version short-circuits; exit 0")
     void execute_givenVersionWithUrl_exitsZeroWithVersion() {
-        int exitCode = cmd.execute("--version", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "--version", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
         assertThat(exitCode).isZero();
         assertThat(stdout.toString().trim()).contains("youtube-downloader 1.0.0");
@@ -188,7 +193,7 @@ class CliFlagParsingBehaviorTest {
     @Test
     @DisplayName("URL with extra query params (AC-1.1) → exit 0")
     void execute_givenUrlWithExtraQueryParams_exitsZero() {
-        int exitCode = cmd.execute("https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf");
 
         assertThat(exitCode).isZero();
     }

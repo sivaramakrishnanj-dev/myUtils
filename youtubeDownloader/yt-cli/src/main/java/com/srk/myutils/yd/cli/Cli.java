@@ -16,6 +16,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
@@ -48,12 +49,24 @@ public final class Cli implements Callable<Integer> {
     @Option(names = "--quiet", description = "Suppress progress output")
     private boolean quiet;
 
+    @Option(names = "--audio-only", description = "Download audio only (no video)")
+    private boolean audioOnly;
+
     @Option(names = "--max-height", description = "Maximum video height; 0 = uncapped (default: ${DEFAULT-VALUE})",
             defaultValue = "1080")
     private int maxHeight;
 
     @Option(names = "--ffmpeg-location", description = "Path to ffmpeg binary (default: use PATH)")
     private String ffmpegLocation;
+
+    @Option(names = "--output-dir", description = "Output directory (default: current directory)")
+    private Path outputDir;
+
+    @Option(names = "--output", description = "Output filename (extension auto-applied)")
+    private Path outputPath;
+
+    @Option(names = "--force", description = "Overwrite existing output files")
+    private boolean force;
 
     /** Default constructor — uses production {@link YoutubeDownloader}. */
     public Cli() {
@@ -74,11 +87,15 @@ public final class Cli implements Callable<Integer> {
             }
             DownloadRequest request = new DownloadRequest(
                     url,
-                    false,
+                    audioOnly,
                     maxHeight,
                     Optional.ofNullable(ffmpegLocation),
-                    new OutputConfig(Optional.empty(), Optional.empty(), false),
-                    listener);
+                    new OutputConfig(
+                            Optional.ofNullable(outputPath),
+                            Optional.ofNullable(outputDir),
+                            force),
+                    listener,
+                    debug);
             DownloadResult result = downloader.download(request);
             LOGGER.info("Downloaded: videoId={} title={}",
                     result.videoId().value(), result.title());

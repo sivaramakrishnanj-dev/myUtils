@@ -6,6 +6,7 @@ import com.srk.myutils.yd.core.ProgressListener;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
 import java.io.PrintWriter;
@@ -24,6 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>SUT: {@link Cli} via {@link FakeDownloaderFactory}, and {@link DownloadRequest} directly.
  */
 class CliFfmpegLocationBehaviorTest {
+
+    @TempDir
+    Path tempDir;
 
     private static final String VALID_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 
@@ -45,7 +49,7 @@ class CliFfmpegLocationBehaviorTest {
     @Test
     @DisplayName("AC-13.2: --ffmpeg-location /custom/path → exit 0, flag accepted")
     void execute_givenFfmpegLocationCustomPath_exitsZero() {
-        int exitCode = cmd.execute("--ffmpeg-location", "/custom/path", VALID_URL);
+        int exitCode = cmd.execute("--ffmpeg-location", "/custom/path", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
     }
@@ -55,7 +59,7 @@ class CliFfmpegLocationBehaviorTest {
     @Test
     @DisplayName("AC-13.2: no --ffmpeg-location → exit 0, default behaviour")
     void execute_givenNoFfmpegLocation_exitsZero() {
-        int exitCode = cmd.execute(VALID_URL);
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
     }
@@ -65,7 +69,7 @@ class CliFfmpegLocationBehaviorTest {
     @Test
     @DisplayName("--ffmpeg-location '' (empty string) → accepted by picocli, exit 0")
     void execute_givenFfmpegLocationEmptyString_exitsZero() {
-        int exitCode = cmd.execute("--ffmpeg-location", "", VALID_URL);
+        int exitCode = cmd.execute("--ffmpeg-location", "", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
     }
@@ -75,7 +79,7 @@ class CliFfmpegLocationBehaviorTest {
     @Test
     @DisplayName("--ffmpeg-location + --debug → both flags accepted, exit 0")
     void execute_givenFfmpegLocationAndDebug_exitsZero() {
-        int exitCode = cmd.execute("--ffmpeg-location", "/usr/local/bin/ffmpeg", "--debug", VALID_URL);
+        int exitCode = cmd.execute("--ffmpeg-location", "/usr/local/bin/ffmpeg", "--debug", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
     }
@@ -100,7 +104,8 @@ class CliFfmpegLocationBehaviorTest {
                 VALID_URL, false, 1080,
                 Optional.of("/custom/ffmpeg"),
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
-                ProgressListener.NO_OP);
+                ProgressListener.NO_OP,
+                false);
 
         assertThat(request.ffmpegLocation()).isPresent()
                 .hasValue("/custom/ffmpeg");
@@ -123,7 +128,7 @@ class CliFfmpegLocationBehaviorTest {
     @Test
     @DisplayName("--ffmpeg-location + --max-height 720 → both flags accepted, exit 0")
     void execute_givenFfmpegLocationAndMaxHeight_exitsZero() {
-        int exitCode = cmd.execute("--ffmpeg-location", "/opt/ffmpeg", "--max-height", "720", VALID_URL);
+        int exitCode = cmd.execute("--ffmpeg-location", "/opt/ffmpeg", "--max-height", "720", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
     }

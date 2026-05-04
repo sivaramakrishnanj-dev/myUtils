@@ -3,12 +3,14 @@ package com.srk.myutils.yd.cli;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import java.nio.file.Path;
 
 /**
  * Comprehensive tests for T-2.11 — {@code --max-height} flag handling (AC-1.3).
@@ -19,6 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>SUT: {@link Cli} — real instance via {@link FakeDownloaderFactory}.
  */
 class CliMaxHeightBehaviorTest {
+
+    @TempDir
+    Path tempDir;
 
     private static final String VALID_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 
@@ -40,7 +45,7 @@ class CliMaxHeightBehaviorTest {
     @Test
     @DisplayName("AC-1.3: --max-height 720 → exit 0, flag accepted")
     void execute_givenMaxHeight720_exitsZero() {
-        int exitCode = cmd.execute("--max-height", "720", VALID_URL);
+        int exitCode = cmd.execute("--max-height", "720", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
     }
@@ -50,7 +55,7 @@ class CliMaxHeightBehaviorTest {
     @Test
     @DisplayName("AC-1.3: --max-height 0 (explicit uncapped) → exit 0")
     void execute_givenMaxHeightZero_exitsZero() {
-        int exitCode = cmd.execute("--max-height", "0", VALID_URL);
+        int exitCode = cmd.execute("--max-height", "0", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
     }
@@ -60,7 +65,7 @@ class CliMaxHeightBehaviorTest {
     @Test
     @DisplayName("AC-1.3: no --max-height → default 1080, exit 0")
     void execute_givenNoMaxHeight_exitsZeroWithDefault1080() {
-        int exitCode = cmd.execute(VALID_URL);
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         // FakeDownloaderFactory does not capture DownloadRequest, so we cannot
         // assert maxHeight==1080 directly. Exit 0 confirms the default is valid.
@@ -72,7 +77,7 @@ class CliMaxHeightBehaviorTest {
     @Test
     @DisplayName("--max-height abc → picocli type-conversion error, exit 2")
     void execute_givenMaxHeightNonInteger_exitsWithUsageError() {
-        int exitCode = cmd.execute("--max-height", "abc", VALID_URL);
+        int exitCode = cmd.execute("--max-height", "abc", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isEqualTo(2);
         assertThat(stderr.toString()).containsIgnoringCase("max-height");
@@ -83,7 +88,7 @@ class CliMaxHeightBehaviorTest {
     @Test
     @DisplayName("AC-1.3: --max-height -1 → validation error, exit 2")
     void execute_givenMaxHeightNegative_exitsWithValidationError() {
-        int exitCode = cmd.execute("--max-height", "-1", VALID_URL);
+        int exitCode = cmd.execute("--max-height", "-1", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isEqualTo(2);
         assertThat(stderr.toString()).contains("--max-height must be >= 0");
@@ -94,7 +99,7 @@ class CliMaxHeightBehaviorTest {
     @Test
     @DisplayName("AC-1.3: --max-height 1080 (default cap) → exit 0")
     void execute_givenMaxHeight1080_exitsZero() {
-        int exitCode = cmd.execute("--max-height", "1080", VALID_URL);
+        int exitCode = cmd.execute("--max-height", "1080", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
     }
@@ -104,7 +109,7 @@ class CliMaxHeightBehaviorTest {
     @Test
     @DisplayName("--max-height + --quiet → both flags accepted, exit 0")
     void execute_givenMaxHeightAndQuiet_exitsZero() {
-        int exitCode = cmd.execute("--max-height", "480", "--quiet", VALID_URL);
+        int exitCode = cmd.execute("--max-height", "720", "--quiet", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         assertThat(exitCode).isZero();
     }
@@ -114,7 +119,7 @@ class CliMaxHeightBehaviorTest {
     @Test
     @DisplayName("--max-height without value → picocli error, non-zero exit")
     void execute_givenMaxHeightWithoutValue_exitsNonZero() {
-        int exitCode = cmd.execute("--max-height", VALID_URL);
+        int exitCode = cmd.execute("--max-height", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
         // picocli tries to parse the URL as an int → type-conversion error
         assertThat(exitCode).isNotZero();

@@ -1,12 +1,14 @@
 package com.srk.myutils.yd.cli;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import java.nio.file.Path;
 
 /**
  * Characterization test for T-2.7 — {@code --quiet} suppresses progress (AC-4.4).
@@ -16,6 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class CliQuietTest {
 
+    @TempDir
+    Path tempDir;
+
     @Test
     void execute_givenQuietFlag_exitsZero() {
         CommandLine cmd = new CommandLine(new Cli(FakeDownloaderFactory.happyPath()));
@@ -24,7 +29,7 @@ class CliQuietTest {
         cmd.setOut(new PrintWriter(stdout));
         cmd.setErr(new PrintWriter(stderr));
 
-        int exitCode = cmd.execute("--quiet", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "--quiet", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
         assertThat(exitCode).isZero();
     }

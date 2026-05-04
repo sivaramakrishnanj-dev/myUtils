@@ -8,7 +8,7 @@ import java.util.Optional;
  * <p>Encapsulates all user-facing options for a single download invocation:
  * the target URL, whether audio-only mode is active (AC-2.1), maximum video
  * height (AC-1.3), ffmpeg binary location (AC-13.2), output configuration,
- * and a progress listener.
+ * a progress listener, and the debug flag (AC-5.4).
  *
  * @param url              raw YouTube URL (required)
  * @param audioOnly        {@code true} for {@code --audio-only} mode (AC-2.1)
@@ -16,6 +16,7 @@ import java.util.Optional;
  * @param ffmpegLocation   path to ffmpeg binary; empty = use system PATH (AC-13.2)
  * @param output           output file placement and overwrite config
  * @param listener         progress callback; use {@link ProgressListener#NO_OP} to suppress
+ * @param debug            {@code true} to enable debug logging and ffmpeg verbose output (AC-5.4)
  */
 public record DownloadRequest(
         String url,
@@ -23,7 +24,8 @@ public record DownloadRequest(
         int maxHeight,
         Optional<String> ffmpegLocation,
         OutputConfig output,
-        ProgressListener listener
+        ProgressListener listener,
+        boolean debug
 ) {
 
     /** Default maximum video height per AC-1.3: 1080p unless overridden. */
@@ -38,6 +40,6 @@ public record DownloadRequest(
 
     /** Convenience: audio-only request with default output config and no progress. */
     public static DownloadRequest audioOnly(String url, OutputConfig output) {
-        return new DownloadRequest(url, true, 0, Optional.empty(), output, ProgressListener.NO_OP);
+        return new DownloadRequest(url, true, 0, Optional.empty(), output, ProgressListener.NO_OP, false);
     }
 }

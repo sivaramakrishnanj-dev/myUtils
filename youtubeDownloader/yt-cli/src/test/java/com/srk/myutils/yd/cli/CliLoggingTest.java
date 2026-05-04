@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import picocli.CommandLine;
@@ -16,6 +17,7 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import java.nio.file.Path;
 
 /**
  * Logging boundary tests for T-1.13 (AC-10.1..AC-10.5).
@@ -31,6 +33,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DisplayName("T-1.13 — SLF4J logging at component boundaries")
 class CliLoggingTest {
+
+    @TempDir
+    Path tempDir;
 
     private static final String LOG_LEVEL_PROP = "org.slf4j.simpleLogger.defaultLogLevel";
 
@@ -60,7 +65,13 @@ class CliLoggingTest {
         // Route picocli's own stderr to the captured stream so it merges
         cmd.setOut(new PrintWriter(stdout));
         cmd.setErr(new PrintWriter(System.err, true));
-        return cmd.execute(args);
+        // Prepend --output-dir and --force so Flow A writes to temp dir
+        String[] fullArgs = new String[args.length + 3];
+        fullArgs[0] = "--output-dir";
+        fullArgs[1] = tempDir.toString();
+        fullArgs[2] = "--force";
+        System.arraycopy(args, 0, fullArgs, 3, args.length);
+        return cmd.execute(fullArgs);
     }
 
     // ── AC-10.2: INFO at external boundaries ────────────────────────

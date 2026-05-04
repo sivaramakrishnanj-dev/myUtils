@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import picocli.CommandLine;
@@ -12,6 +13,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import java.nio.file.Path;
 
 /**
  * Comprehensive CLI error-handling tests for T-1.12 (AC-5.1..AC-5.5).
@@ -32,6 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see CliErrorHandlingTest characterization tests (implementer)
  */
 class CliErrorHandlingBehaviorTest {
+
+    @TempDir
+    Path tempDir;
 
     private CommandLine cmd;
     private StringWriter stdout;
@@ -63,7 +68,7 @@ class CliErrorHandlingBehaviorTest {
                 "https://www.youtube.com/playlist?list=PLrAXtmErZgOe"
         })
         void execute_givenInvalidUrl_exitsCode2WithArgsError(String url) {
-            int exitCode = cmd.execute(url);
+            int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", url);
 
             assertThat(exitCode).isEqualTo(2);
             assertThat(stderr.toString()).contains("Error: args:");
@@ -75,7 +80,7 @@ class CliErrorHandlingBehaviorTest {
     @Test
     @DisplayName("Valid URL → exit 0, stderr empty")
     void execute_givenValidUrl_exitsZeroWithNoStderr() {
-        int exitCode = cmd.execute("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
         assertThat(exitCode).isZero();
         assertThat(stderr.toString()).isEmpty();
@@ -145,7 +150,7 @@ class CliErrorHandlingBehaviorTest {
     @Test
     @DisplayName("AC-5.1: exactly one 'Error:' line on stderr (no duplicates)")
     void execute_givenInvalidUrl_exactlyOneErrorLine() {
-        cmd.execute("https://google.com");
+        cmd.execute("--output-dir", tempDir.toString(), "--force", "https://google.com");
 
         long errorLineCount = stderr.toString().lines()
                 .filter(line -> line.startsWith("Error:"))
@@ -158,7 +163,7 @@ class CliErrorHandlingBehaviorTest {
     @Test
     @DisplayName("CT-EXIT-UNIT-1: UrlParseException → exit code 2 at CLI layer")
     void execute_givenUrlParseError_exitsExactlyCode2() {
-        int exitCode = cmd.execute("https://www.youtube.com/channel/UCxyz");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "https://www.youtube.com/channel/UCxyz");
 
         assertThat(exitCode).isEqualTo(2);
     }
@@ -181,7 +186,7 @@ class CliErrorHandlingBehaviorTest {
     @Test
     @DisplayName("--debug + valid URL → exit 0, no error line on stderr")
     void execute_givenDebugAndValidUrl_exitsZeroNoError() {
-        int exitCode = cmd.execute("--debug", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        int exitCode = cmd.execute("--output-dir", tempDir.toString(), "--force", "--debug", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
         assertThat(exitCode).isZero();
         assertThat(stderr.toString()).doesNotContain("Error:");
@@ -192,7 +197,7 @@ class CliErrorHandlingBehaviorTest {
     @Test
     @DisplayName("AC-5.1: error message includes specific detail from UrlParseException")
     void execute_givenBareYoutubeDomain_errorContainsUrlInDetail() {
-        cmd.execute("https://youtube.com");
+        cmd.execute("--output-dir", tempDir.toString(), "--force", "https://youtube.com");
 
         assertThat(stderr.toString()).contains("Error: args:")
                 .contains("youtube.com");
