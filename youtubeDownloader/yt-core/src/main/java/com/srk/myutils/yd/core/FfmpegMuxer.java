@@ -64,6 +64,9 @@ public final class FfmpegMuxer {
     /** NFR-FFMPEG-STDERR-LINES = 20 trailing lines captured on failure (AC-13.4). */
     static final int FFMPEG_STDERR_LINES = 20;
 
+    /** NFR-FFMPEG-INVOCATION-TIMEOUT = 600s per-invocation timeout (T-3.6). */
+    static final long FFMPEG_TIMEOUT_SECONDS = 600;
+
     /** Grace period (seconds) between SIGTERM and SIGKILL during shutdown (02-architecture.md § 5). */
     private static final int SHUTDOWN_GRACE_SECONDS = 5;
 
@@ -86,13 +89,20 @@ public final class FfmpegMuxer {
     private static final Pattern VERSION_NUMBER_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)(?:\\.(\\d+))?");
 
     private final String ffmpegBinaryPath;
+    private final long timeoutSeconds;
 
     public FfmpegMuxer() {
         this("ffmpeg");
     }
 
     public FfmpegMuxer(String ffmpegBinaryPath) {
+        this(ffmpegBinaryPath, FFMPEG_TIMEOUT_SECONDS);
+    }
+
+    /** Package-private constructor for testability — allows overriding the timeout. */
+    FfmpegMuxer(String ffmpegBinaryPath, long timeoutSeconds) {
         this.ffmpegBinaryPath = Objects.requireNonNull(ffmpegBinaryPath, "ffmpegBinaryPath");
+        this.timeoutSeconds = timeoutSeconds;
     }
 
     /**
@@ -189,7 +199,18 @@ public final class FfmpegMuxer {
             LIVE_PROCESSES.add(process);
             try {
                 List<String> tailStderr = captureLastLines(process.getErrorStream(), FFMPEG_STDERR_LINES);
-                int exitCode = process.waitFor();
+                boolean finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
+
+                if (!finished) {
+                    process.destroy();
+                    if (!process.waitFor(SHUTDOWN_GRACE_SECONDS, TimeUnit.SECONDS)) {
+                        process.destroyForcibly();
+                    }
+                    throw new FfmpegException(
+                            "ffmpeg: invocation exceeded " + timeoutSeconds + "s timeout");
+                }
+
+                int exitCode = process.exitValue();
 
                 if (exitCode != 0) {
                     String stderrText = String.join("\n", tailStderr);
@@ -247,7 +268,18 @@ public final class FfmpegMuxer {
             LIVE_PROCESSES.add(process);
             try {
                 List<String> tailStderr = captureLastLines(process.getErrorStream(), FFMPEG_STDERR_LINES);
-                int exitCode = process.waitFor();
+                boolean finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
+
+                if (!finished) {
+                    process.destroy();
+                    if (!process.waitFor(SHUTDOWN_GRACE_SECONDS, TimeUnit.SECONDS)) {
+                        process.destroyForcibly();
+                    }
+                    throw new FfmpegException(
+                            "ffmpeg: invocation exceeded " + timeoutSeconds + "s timeout");
+                }
+
+                int exitCode = process.exitValue();
 
                 if (exitCode != 0) {
                     String stderrText = String.join("\n", tailStderr);
