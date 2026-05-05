@@ -1,5 +1,6 @@
 package com.srk.myutils.yd.cli;
 
+import com.srk.myutils.yd.core.AudioFormat;
 import com.srk.myutils.yd.core.DownloadRequest;
 import com.srk.myutils.yd.core.OutputConfig;
 import com.srk.myutils.yd.core.ProgressListener;
@@ -101,7 +102,7 @@ class CliFfmpegLocationBehaviorTest {
     @DisplayName("DownloadRequest: ffmpegLocation() returns Optional.of(\"/custom/ffmpeg\")")
     void downloadRequest_givenFfmpegLocation_returnsOptionalOf() {
         DownloadRequest request = new DownloadRequest(
-                VALID_URL, false, 1080,
+                VALID_URL, false, AudioFormat.M4A, 1080,
                 Optional.of("/custom/ffmpeg"),
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 ProgressListener.NO_OP,

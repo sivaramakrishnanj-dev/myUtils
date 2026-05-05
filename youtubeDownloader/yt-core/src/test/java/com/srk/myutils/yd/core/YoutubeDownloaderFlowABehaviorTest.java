@@ -174,7 +174,7 @@ class YoutubeDownloaderFlowABehaviorTest {
 
     private DownloadRequest flowARequest(boolean debug) {
         return new DownloadRequest(
-                VALID_URL, false, 1080,
+                VALID_URL, false, AudioFormat.M4A, 1080,
                 Optional.of(fakeFfmpegScript.toString()),
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                 ProgressListener.NO_OP, debug);
@@ -245,7 +245,7 @@ class YoutubeDownloaderFlowABehaviorTest {
             // Use the happy fixture but set maxHeight=1 so no video passes the filter
             YoutubeDownloader dl = sutWithFakeFfmpeg(innerTubeClient(), streamClient());
             DownloadRequest request = new DownloadRequest(
-                    VALID_URL, false, 1,
+                    VALID_URL, false, AudioFormat.M4A, 1,
                     Optional.of(fakeFfmpegScript.toString()),
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     ProgressListener.NO_OP, false);
@@ -285,7 +285,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     req -> new FfmpegMuxer(badFfmpeg.toString(), 30));
 
             assertThatThrownBy(() -> dl.download(new DownloadRequest(
-                    VALID_URL, false, 1080,
+                    VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(badFfmpeg.toString()),
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     ProgressListener.NO_OP, false)))
@@ -369,7 +369,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     req -> new FfmpegMuxer(failMuxFfmpeg.toString(), 30));
 
             assertThatThrownBy(() -> dl.download(new DownloadRequest(
-                    VALID_URL, false, 1080,
+                    VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(failMuxFfmpeg.toString()),
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     ProgressListener.NO_OP, false)))
@@ -478,7 +478,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     req -> new FfmpegMuxer(fakeFfmpegScript.toString(), 30));
 
             DownloadRequest request = new DownloadRequest(
-                    VALID_URL, false, 1080,
+                    VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(fakeFfmpegScript.toString()),
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     capturing, false);
@@ -575,7 +575,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     req -> new FfmpegMuxer(failMux.toString(), 30));
 
             assertThatThrownBy(() -> dl.download(new DownloadRequest(
-                    VALID_URL, false, 1080,
+                    VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(failMux.toString()),
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     ProgressListener.NO_OP, false)))
@@ -602,7 +602,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     new StreamDownloader(streamClient()));
 
             DownloadResult result = dl.download(new DownloadRequest(
-                    VALID_URL, false, 1080,
+                    VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(fakeFfmpegScript.toString()),
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     ProgressListener.NO_OP, false));
@@ -631,7 +631,7 @@ class YoutubeDownloaderFlowABehaviorTest {
             YoutubeDownloader dl = sutWithFakeFfmpeg(innerTubeClient(), streamClient());
 
             DownloadRequest request = new DownloadRequest(
-                    VALID_URL, false, 1080,
+                    VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(fakeFfmpegScript.toString()),
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), true),
                     ProgressListener.NO_OP, false);

@@ -51,7 +51,7 @@ class YoutubeDownloaderBehaviorTest {
      * triggering the full download/mux flow.
      */
     private static DownloadRequest metadataOnlyRequest(String url, Path outputDir) {
-        return new DownloadRequest(url, true, 0, Optional.empty(),
+        return new DownloadRequest(url, true, AudioFormat.M4A, 0, Optional.empty(),
                 new OutputConfig(Optional.empty(), Optional.of(outputDir), false),
                 ProgressListener.NO_OP, false);
     }
@@ -60,7 +60,7 @@ class YoutubeDownloaderBehaviorTest {
      * Overload for error-path tests where the request never reaches the download step.
      */
     private static DownloadRequest metadataOnlyRequest(String url) {
-        return new DownloadRequest(url, true, 0, Optional.empty(),
+        return new DownloadRequest(url, true, AudioFormat.M4A, 0, Optional.empty(),
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 ProgressListener.NO_OP, false);
     }

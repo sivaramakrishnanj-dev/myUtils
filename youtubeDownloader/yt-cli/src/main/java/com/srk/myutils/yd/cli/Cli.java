@@ -1,5 +1,6 @@
 package com.srk.myutils.yd.cli;
 
+import com.srk.myutils.yd.core.AudioFormat;
 import com.srk.myutils.yd.core.DownloadRequest;
 import com.srk.myutils.yd.core.DownloadResult;
 import com.srk.myutils.yd.core.ErrorMapper;
@@ -52,6 +53,10 @@ public final class Cli implements Callable<Integer> {
     @Option(names = "--audio-only", description = "Download audio only (no video)")
     private boolean audioOnly;
 
+    @Option(names = "--audio-format", description = "Audio output format: m4a (default) or mp3 (requires ffmpeg)",
+            defaultValue = "m4a")
+    private String audioFormatStr;
+
     @Option(names = "--max-height", description = "Maximum video height; 0 = uncapped (default: ${DEFAULT-VALUE})",
             defaultValue = "1080")
     private int maxHeight;
@@ -85,9 +90,15 @@ public final class Cli implements Callable<Integer> {
             if (maxHeight < 0) {
                 throw new UrlParseException("--max-height must be >= 0");
             }
+            AudioFormat audioFormat = parseAudioFormat(audioFormatStr);
+            if (audioFormat == AudioFormat.MP3 && !audioOnly) {
+                LOGGER.warn("--audio-format mp3 implies --audio-only; treating as audio-only (AC-2.4)");
+                audioOnly = true;
+            }
             DownloadRequest request = new DownloadRequest(
                     url,
                     audioOnly,
+                    audioFormat,
                     maxHeight,
                     Optional.ofNullable(ffmpegLocation),
                     new OutputConfig(
@@ -128,6 +139,15 @@ public final class Cli implements Callable<Integer> {
         configureLogging(args);
         int exitCode = new CommandLine(new Cli()).execute(args);
         System.exit(exitCode);
+    }
+
+    private static AudioFormat parseAudioFormat(String value) {
+        return switch (value.toLowerCase(java.util.Locale.ROOT)) {
+            case "m4a" -> AudioFormat.M4A;
+            case "mp3" -> AudioFormat.MP3;
+            default -> throw new UrlParseException(
+                    "--audio-format must be 'm4a' or 'mp3', got: " + value);
+        };
     }
 
     /**

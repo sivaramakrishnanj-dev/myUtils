@@ -55,6 +55,7 @@ class YoutubeDownloaderFlowATest {
         DownloadRequest request = new DownloadRequest(
                 "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 false,
+                AudioFormat.M4A,
                 1080,
                 Optional.of(fakeFfmpegPath()),
                 output,

@@ -6,12 +6,14 @@ import java.util.Optional;
  * Immutable request object for {@link YoutubeDownloader#download(DownloadRequest)}.
  *
  * <p>Encapsulates all user-facing options for a single download invocation:
- * the target URL, whether audio-only mode is active (AC-2.1), maximum video
- * height (AC-1.3), ffmpeg binary location (AC-13.2), output configuration,
- * a progress listener, and the debug flag (AC-5.4).
+ * the target URL, whether audio-only mode is active (AC-2.1), audio format
+ * (AC-2.3, AC-2.4), maximum video height (AC-1.3), ffmpeg binary location
+ * (AC-13.2), output configuration, a progress listener, and the debug flag
+ * (AC-5.4).
  *
  * @param url              raw YouTube URL (required)
  * @param audioOnly        {@code true} for {@code --audio-only} mode (AC-2.1)
+ * @param audioFormat      audio output format; M4A (default) or MP3 (AC-2.3, AC-2.4)
  * @param maxHeight        maximum video height; 0 = uncapped (AC-1.3)
  * @param ffmpegLocation   path to ffmpeg binary; empty = use system PATH (AC-13.2)
  * @param output           output file placement and overwrite config
@@ -21,6 +23,7 @@ import java.util.Optional;
 public record DownloadRequest(
         String url,
         boolean audioOnly,
+        AudioFormat audioFormat,
         int maxHeight,
         Optional<String> ffmpegLocation,
         OutputConfig output,
@@ -40,6 +43,6 @@ public record DownloadRequest(
 
     /** Convenience: audio-only request with default output config and no progress. */
     public static DownloadRequest audioOnly(String url, OutputConfig output) {
-        return new DownloadRequest(url, true, 0, Optional.empty(), output, ProgressListener.NO_OP, false);
+        return new DownloadRequest(url, true, AudioFormat.M4A, 0, Optional.empty(), output, ProgressListener.NO_OP, false);
     }
 }

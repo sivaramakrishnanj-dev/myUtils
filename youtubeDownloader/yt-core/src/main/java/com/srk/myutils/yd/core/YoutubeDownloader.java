@@ -113,6 +113,7 @@ public final class YoutubeDownloader {
         return download(new DownloadRequest(
                 url,
                 false,
+                AudioFormat.M4A,
                 DownloadRequest.DEFAULT_MAX_HEIGHT,
                 Optional.empty(),
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
@@ -232,40 +233,64 @@ public final class YoutubeDownloader {
 
     /**
      * Flow B — audio-only download (AC-2.1, AC-2.3).
+     * Flow B' — audio-only + MP3 transcode (AC-2.4).
      *
-     * <p>Selects audio format only (no video), downloads to {@code .part},
-     * moves to final {@code .m4a} path via {@link OutputWriter}.
+     * <p>M4A: selects audio format, downloads to {@code .part}, moves to final {@code .m4a}.
+     * <p>MP3: probes ffmpeg, downloads to {@code .part}, transcodes to {@code .mp3}, deletes {@code .part}.
      */
     private DownloadResult downloadAudioOnly(DownloadRequest request,
                                              VideoId videoId,
                                              PlayerResponse player) {
         FormatSelection selection = formatSelector.selectAudioOnly(player.adaptiveFormats());
-        Format audioFormat = selection.audio();
+        Format audioFmt = selection.audio();
 
+        String extension = request.audioFormat() == AudioFormat.MP3 ? "mp3" : "m4a";
         OutputWriter outputWriter = new OutputWriter(request.output());
-        Path outputPath = outputWriter.deriveOutputPath(player.videoDetails(), "m4a");
+        Path outputPath = outputWriter.deriveOutputPath(player.videoDetails(), extension);
         outputWriter.assertNotExistsOrForce(outputPath);
 
-        long expectedBytes = audioFormat.contentLength().orElse(0L);
+        long expectedBytes = audioFmt.contentLength().orElse(0L);
         outputWriter.assertSufficientFreeSpace(outputPath, expectedBytes);
 
         Path outputDir = outputPath.getParent() != null ? outputPath.getParent() : Path.of(".");
 
-        try (DownloadContext ctx = DownloadContext.create(outputDir, videoId)) {
-            Path audioPart = ctx.tempFile("audio.part");
+        if (request.audioFormat() == AudioFormat.MP3) {
+            FfmpegMuxer muxer = muxerFactory.apply(request);
+            muxer.probeVersion();
 
-            LOGGER.info("Downloading audio stream: itag={} url={}", audioFormat.itag(),
-                    audioFormat.url().substring(0, Math.min(60, audioFormat.url().length())) + "...");
+            try (DownloadContext ctx = DownloadContext.create(outputDir, videoId)) {
+                Path audioPart = ctx.tempFile("audio.part");
 
-            streamDownloader.download(audioFormat.url(), audioPart, request.listener());
+                LOGGER.info("Downloading audio stream: itag={} {}bps", audioFmt.itag(), audioFmt.bitrate());
+                streamDownloader.download(audioFmt.url(), audioPart, request.listener());
 
-            Files.move(audioPart, outputPath, StandardCopyOption.REPLACE_EXISTING);
-            LOGGER.info("Audio written to: {}", outputPath);
+                LOGGER.info("Transcoding audio → MP3: {}", outputPath);
+                muxer.transcodeMp3(audioPart, outputPath, request.debug());
 
-            ctx.markSuccess();
-        } catch (IOException e) {
-            throw new FilesystemException(
-                    "Failed to move audio.part to " + outputPath + ": " + e.getMessage(), e);
+                Files.delete(audioPart);
+                LOGGER.info("Audio written to: {}", outputPath);
+                ctx.markSuccess();
+            } catch (IOException e) {
+                throw new FilesystemException(
+                        "Failed to delete audio.part after transcode: " + e.getMessage(), e);
+            }
+        } else {
+            try (DownloadContext ctx = DownloadContext.create(outputDir, videoId)) {
+                Path audioPart = ctx.tempFile("audio.part");
+
+                LOGGER.info("Downloading audio stream: itag={} url={}", audioFmt.itag(),
+                        audioFmt.url().substring(0, Math.min(60, audioFmt.url().length())) + "...");
+
+                streamDownloader.download(audioFmt.url(), audioPart, request.listener());
+
+                Files.move(audioPart, outputPath, StandardCopyOption.REPLACE_EXISTING);
+                LOGGER.info("Audio written to: {}", outputPath);
+
+                ctx.markSuccess();
+            } catch (IOException e) {
+                throw new FilesystemException(
+                        "Failed to move audio.part to " + outputPath + ": " + e.getMessage(), e);
+            }
         }
 
         return new DownloadResult(
