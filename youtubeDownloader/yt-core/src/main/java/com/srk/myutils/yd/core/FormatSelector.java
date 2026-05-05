@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Selects the best video and audio {@link Format} from a list of adaptive formats.
@@ -33,6 +35,98 @@ import java.util.Locale;
 public final class FormatSelector {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FormatSelector.class);
+
+    /**
+     * Selects a caption track using the AC-8.1 preference chain and AC-7.* manual/ASR rules.
+     *
+     * @param tracks        caption tracks from the InnerTube response
+     * @param requestedLang user-specified {@code --lang} (AC-8.1 step 1)
+     * @param audioLanguage video's primary audio language from {@code videoDetails} (AC-8.1 step 3)
+     * @param noAsr         {@code true} when {@code --no-asr} was passed (AC-7.4)
+     * @return a {@link CaptionSelection} with the chosen track and ASR-fallback flag (INV-16)
+     * @throws CaptionUnavailableException per AC-6.4, AC-7.4, AC-8.3
+     */
+    public CaptionSelection selectCaption(List<CaptionTrack> tracks,
+                                          Optional<LanguageCode> requestedLang,
+                                          Optional<LanguageCode> audioLanguage,
+                                          boolean noAsr) {
+        if (tracks.isEmpty()) {
+            throw new CaptionUnavailableException(
+                    "no caption tracks available for this video.");
+        }
+
+        LanguageCode target = resolveTargetLanguage(tracks, requestedLang, audioLanguage);
+        return selectForLanguage(tracks, target, requestedLang.isPresent(), noAsr);
+    }
+
+    private LanguageCode resolveTargetLanguage(List<CaptionTrack> tracks,
+                                               Optional<LanguageCode> requestedLang,
+                                               Optional<LanguageCode> audioLanguage) {
+        // AC-8.1 step 1
+        if (requestedLang.isPresent()) {
+            return requestedLang.get();
+        }
+        // AC-8.1 step 2: "en" if any English track exists
+        LanguageCode en = LanguageCode.of("en");
+        boolean hasEnglish = tracks.stream()
+                .anyMatch(t -> t.languageCode().matches(en));
+        if (hasEnglish) {
+            return en;
+        }
+        // AC-8.1 step 3: video's audioLanguage if declared
+        if (audioLanguage.isPresent()) {
+            return audioLanguage.get();
+        }
+        // AC-8.1 step 4: first track listed
+        return tracks.get(0).languageCode();
+    }
+
+    private CaptionSelection selectForLanguage(List<CaptionTrack> tracks,
+                                               LanguageCode target,
+                                               boolean wasExplicitlyRequested,
+                                               boolean noAsr) {
+        // Prefer exact match over primary-subtag-only match (AC-8.2, AC-8.4 determinism)
+        Optional<CaptionTrack> manual = tracks.stream()
+                .filter(t -> !t.isAsr())
+                .filter(t -> t.languageCode().value().equals(target.value()))
+                .findFirst()
+                .or(() -> tracks.stream()
+                        .filter(t -> !t.isAsr())
+                        .filter(t -> t.languageCode().matches(target))
+                        .findFirst());
+        if (manual.isPresent()) {
+            return new CaptionSelection(manual.get(), false);
+        }
+
+        // ASR lookup (AC-7.3): exact then primary-subtag
+        Optional<CaptionTrack> asr = tracks.stream()
+                .filter(CaptionTrack::isAsr)
+                .filter(t -> t.languageCode().value().equals(target.value()))
+                .findFirst()
+                .or(() -> tracks.stream()
+                        .filter(CaptionTrack::isAsr)
+                        .filter(t -> t.languageCode().matches(target))
+                        .findFirst());
+
+        // AC-7.4: only fire when ASR matches the target but --no-asr prevents use
+        if (asr.isPresent()) {
+            if (noAsr) {
+                throw new CaptionUnavailableException(
+                        "only auto-generated captions available; --no-asr prevents their use.");
+            }
+            LOGGER.warn("ASR fallback for language {}", target.value());
+            return new CaptionSelection(asr.get(), true);
+        }
+
+        // No track matches at all — AC-8.3
+        String available = tracks.stream()
+                .map(t -> t.languageCode().value())
+                .distinct()
+                .collect(Collectors.joining(", "));
+        throw new CaptionUnavailableException(
+                "no caption track available for language '" + target.value()
+                        + "'. Available: " + available);
+    }
 
     /**
      * Selects the best audio format only — no video (AC-2.1).
