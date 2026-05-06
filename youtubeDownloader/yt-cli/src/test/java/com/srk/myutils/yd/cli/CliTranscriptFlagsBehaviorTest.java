@@ -79,11 +79,12 @@ class CliTranscriptFlagsBehaviorTest {
     // ── 4. --lang fr-CA → exit 0, lang=Optional.of("fr-CA") (AC-8.2 subtag) ──
 
     @Test
-    @DisplayName("AC-8.2: --lang fr-CA (subtag) → exit 0")
+    @DisplayName("AC-8.3: --lang fr-CA (no French track in fixture) → exit 40")
     void execute_givenLangFrCa_exitsZero() {
         int exitCode = cmd.execute("--transcript", "--lang", "fr-CA", "--output-dir", tempDir.toString(), "--force", VALID_URL);
 
-        assertThat(exitCode).isZero();
+        // Fixture only has English tracks; AC-8.3 → CaptionUnavailableException → exit 40
+        assertThat(exitCode).isEqualTo(40);
     }
 
     // ── 5. Without --lang → exit 0, lang=Optional.empty (default chain) ──

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -35,27 +36,43 @@ public final class YoutubeDownloader {
     private final FormatSelector formatSelector;
     private final StreamDownloader streamDownloader;
     private final Function<DownloadRequest, FfmpegMuxer> muxerFactory;
+    private final CaptionDownloader captionDownloader;
+    private final ThumbnailDownloader thumbnailDownloader;
 
     /**
-     * Full constructor with all dependencies including muxer factory.
+     * Full 7-arg constructor with all dependencies.
+     */
+    public YoutubeDownloader(UrlParser urlParser,
+                             InnerTubeClient innerTubeClient,
+                             FormatSelector formatSelector,
+                             StreamDownloader streamDownloader,
+                             Function<DownloadRequest, FfmpegMuxer> muxerFactory,
+                             CaptionDownloader captionDownloader,
+                             ThumbnailDownloader thumbnailDownloader) {
+        this.urlParser = urlParser;
+        this.innerTubeClient = innerTubeClient;
+        this.formatSelector = formatSelector;
+        this.streamDownloader = streamDownloader;
+        this.muxerFactory = muxerFactory;
+        this.captionDownloader = captionDownloader;
+        this.thumbnailDownloader = thumbnailDownloader;
+    }
+
+    /**
+     * 5-arg constructor (backward-compatible) — uses production defaults for
+     * caption and thumbnail downloaders.
      */
     public YoutubeDownloader(UrlParser urlParser,
                              InnerTubeClient innerTubeClient,
                              FormatSelector formatSelector,
                              StreamDownloader streamDownloader,
                              Function<DownloadRequest, FfmpegMuxer> muxerFactory) {
-        this.urlParser = urlParser;
-        this.innerTubeClient = innerTubeClient;
-        this.formatSelector = formatSelector;
-        this.streamDownloader = streamDownloader;
-        this.muxerFactory = muxerFactory;
+        this(urlParser, innerTubeClient, formatSelector, streamDownloader, muxerFactory,
+                CaptionDownloader.create(), ThumbnailDownloader.create());
     }
 
     /**
-     * @param urlParser        parses raw URL to {@link VideoId}
-     * @param innerTubeClient  fetches InnerTube player response
-     * @param formatSelector   selects best format(s) from adaptive formats
-     * @param streamDownloader downloads a stream to a {@code .part} file
+     * 4-arg constructor (backward-compatible).
      */
     public YoutubeDownloader(UrlParser urlParser,
                              InnerTubeClient innerTubeClient,
@@ -79,21 +96,15 @@ public final class YoutubeDownloader {
                 InnerTubeClient.create(),
                 new FormatSelector(),
                 StreamDownloader.create(),
-                DEFAULT_MUXER_FACTORY);
+                DEFAULT_MUXER_FACTORY,
+                CaptionDownloader.create(),
+                ThumbnailDownloader.create());
     }
 
     /**
      * Resolves a YouTube URL and returns download metadata.
      *
      * <p>Convenience overload that uses {@link ProgressListener#NO_OP}.
-     *
-     * @param url raw YouTube URL
-     * @return download result with video metadata
-     * @throws UrlParseException         if the URL is invalid (exit 2)
-     * @throws NetworkException          on network failure (exit 10)
-     * @throws InnerTubeParseException   on response parse error (exit 11)
-     * @throws VideoUnavailableException if the video is unavailable (exit 20)
-     * @throws LiveStreamException       if the video is live (exit 21)
      */
     public DownloadResult download(String url) {
         return download(url, ProgressListener.NO_OP);
@@ -104,10 +115,6 @@ public final class YoutubeDownloader {
      *
      * <p>Convenience overload — wraps the URL in a non-audio-only
      * {@link DownloadRequest} with default output config.
-     *
-     * @param url      raw YouTube URL
-     * @param listener progress callback; use {@link ProgressListener#NO_OP} to suppress
-     * @return download result with video metadata (no media files yet — video+audio path is M3)
      */
     public DownloadResult download(String url, ProgressListener listener) {
         return download(new DownloadRequest(
@@ -126,28 +133,8 @@ public final class YoutubeDownloader {
     }
 
     /**
-     * Full download entrypoint supporting audio-only and video+audio modes.
-     *
-     * <p>Flow A (video+audio, AC-1.6):
-     * <ol>
-     *   <li>Parse URL → {@link VideoId}</li>
-     *   <li>Fetch InnerTube player → raw bytes</li>
-     *   <li>Extract → {@link PlayerResponse}, check playability</li>
-     *   <li>Select video + audio formats</li>
-     *   <li>Probe ffmpeg version (AC-13.1)</li>
-     *   <li>Create temp dir, download video + audio to {@code .part} files</li>
-     *   <li>Derive output path, check overwrite + disk space</li>
-     *   <li>Mux via ffmpeg → {@code .mp4}</li>
-     *   <li>Mark success, clean temp dir, return result</li>
-     * </ol>
-     *
-     * <p>Flow B (audio-only, AC-2.1, AC-2.3):
-     * <ol>
-     *   <li>Parse URL → {@link VideoId}</li>
-     *   <li>Fetch InnerTube player → raw bytes</li>
-     *   <li>Extract → {@link PlayerResponse}, check playability</li>
-     *   <li>Select audio format, download to {@code .part}, move to {@code .m4a}</li>
-     * </ol>
+     * Full download entrypoint supporting audio-only and video+audio modes,
+     * with optional transcript and thumbnail flows.
      *
      * @param request download request with all options
      * @return download result
@@ -190,7 +177,6 @@ public final class YoutubeDownloader {
         Format videoFormat = selection.video();
         Format audioFormat = selection.audio();
 
-        // AC-13.1: probe ffmpeg before downloading (only when mux is needed)
         FfmpegMuxer muxer = muxerFactory.apply(request);
         muxer.probeVersion();
 
@@ -223,24 +209,25 @@ public final class YoutubeDownloader {
             ctx.markSuccess();
         }
 
+        // Orthogonal flows: transcript + thumbnail (partial success on failure)
+        TranscriptResult transcript = handleTranscript(request, player, outputPath);
+        Optional<Path> thumbnailPath = handleThumbnail(request, player, outputPath);
+
         return new DownloadResult(
                 videoId,
                 player.videoDetails().title(),
                 Optional.of(outputPath),
                 Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                false
+                transcript.srtPath(),
+                transcript.txtPath(),
+                thumbnailPath,
+                transcript.usedAsrFallback()
         );
     }
 
     /**
      * Flow B — audio-only download (AC-2.1, AC-2.3).
      * Flow B' — audio-only + MP3 transcode (AC-2.4).
-     *
-     * <p>M4A: selects audio format, downloads to {@code .part}, moves to final {@code .m4a}.
-     * <p>MP3: probes ffmpeg, downloads to {@code .part}, transcodes to {@code .mp3}, deletes {@code .part}.
      */
     private DownloadResult downloadAudioOnly(DownloadRequest request,
                                              VideoId videoId,
@@ -297,15 +284,121 @@ public final class YoutubeDownloader {
             }
         }
 
+        // Orthogonal flows: transcript + thumbnail (partial success on failure)
+        TranscriptResult transcript = handleTranscript(request, player, outputPath);
+        Optional<Path> thumbnailPath = handleThumbnail(request, player, outputPath);
+
         return new DownloadResult(
                 videoId,
                 player.videoDetails().title(),
                 Optional.empty(),
                 Optional.of(outputPath),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                false
+                transcript.srtPath(),
+                transcript.txtPath(),
+                thumbnailPath,
+                transcript.usedAsrFallback()
         );
+    }
+
+    /**
+     * Handles the optional transcript flow: select caption → download XML →
+     * convert to SRT + TXT → write files. Returns empty paths on failure (WARN, partial success).
+     *
+     * <p>CaptionUnavailableException from selectCaption propagates (AC-6.4: exit 40).
+     * NetworkException during download is caught as partial success (02-arch § 6).
+     */
+    private TranscriptResult handleTranscript(DownloadRequest request,
+                                              PlayerResponse player,
+                                              Path mediaOutputPath) {
+        if (!request.transcript()) {
+            return TranscriptResult.EMPTY;
+        }
+
+        Optional<LanguageCode> requestedLang = request.lang().map(LanguageCode::of);
+        Optional<LanguageCode> audioLanguage = player.videoDetails().audioLanguage();
+
+        // AC-6.4: selectCaption throws CaptionUnavailableException if no tracks — propagates
+        CaptionSelection captionSelection = formatSelector.selectCaption(
+                player.captionTracks(), requestedLang, audioLanguage, request.noAsr());
+
+        String xml;
+        try {
+            xml = captionDownloader.download(captionSelection.track().baseUrl());
+        } catch (NetworkException e) {
+            LOGGER.warn("Caption download failed (partial success): {}", e.getMessage());
+            return new TranscriptResult(Optional.empty(), Optional.empty(),
+                    captionSelection.usedAsrFallback());
+        }
+
+        List<CaptionCue> cues = CaptionConverter.parseXml(xml);
+        String srtContent = CaptionConverter.toSrt(cues);
+        String txtContent = CaptionConverter.toTxt(cues);
+
+        // Derive .srt and .txt paths from the media output path
+        Path basePath = stripExtension(mediaOutputPath);
+        Path srtPath = basePath.resolveSibling(basePath.getFileName() + ".srt");
+        Path txtPath = basePath.resolveSibling(basePath.getFileName() + ".txt");
+
+        try {
+            Files.writeString(srtPath, srtContent);
+            LOGGER.info("SRT written to: {}", srtPath);
+            Files.writeString(txtPath, txtContent);
+            LOGGER.info("TXT written to: {}", txtPath);
+        } catch (IOException e) {
+            LOGGER.warn("Failed to write transcript files (partial success): {}", e.getMessage());
+            return new TranscriptResult(Optional.empty(), Optional.empty(),
+                    captionSelection.usedAsrFallback());
+        }
+
+        return new TranscriptResult(Optional.of(srtPath), Optional.of(txtPath),
+                captionSelection.usedAsrFallback());
+    }
+
+    /**
+     * Handles the optional thumbnail flow: download highest-res thumbnail to .jpg.
+     * Returns empty on failure (WARN, partial success per 02-arch § 6).
+     */
+    private Optional<Path> handleThumbnail(DownloadRequest request,
+                                           PlayerResponse player,
+                                           Path mediaOutputPath) {
+        if (!request.thumbnail()) {
+            return Optional.empty();
+        }
+
+        List<ThumbnailUrl> thumbnails = player.thumbnails();
+        if (thumbnails == null || thumbnails.isEmpty()) {
+            LOGGER.warn("No thumbnails available in player response");
+            return Optional.empty();
+        }
+
+        Path basePath = stripExtension(mediaOutputPath);
+        Path thumbnailPath = basePath.resolveSibling(basePath.getFileName() + ".jpg");
+
+        try {
+            thumbnailDownloader.download(thumbnails, thumbnailPath);
+            return Optional.of(thumbnailPath);
+        } catch (NetworkException e) {
+            LOGGER.warn("Thumbnail download failed (partial success): {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /** Strips the file extension from a path, returning the base path. */
+    private static Path stripExtension(Path path) {
+        String fileName = path.getFileName().toString();
+        int dot = fileName.lastIndexOf('.');
+        if (dot > 0) {
+            return path.resolveSibling(fileName.substring(0, dot));
+        }
+        return path;
+    }
+
+    /**
+     * Internal result holder for the transcript flow.
+     */
+    private record TranscriptResult(Optional<Path> srtPath, Optional<Path> txtPath,
+                                    boolean usedAsrFallback) {
+        static final TranscriptResult EMPTY = new TranscriptResult(
+                Optional.empty(), Optional.empty(), false);
     }
 }

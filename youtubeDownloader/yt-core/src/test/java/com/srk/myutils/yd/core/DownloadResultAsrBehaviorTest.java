@@ -6,7 +6,6 @@ import okhttp3.Protocol;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -163,18 +162,54 @@ class DownloadResultAsrBehaviorTest {
                 .isFalse();
     }
 
-    // ── 7. INV-16 placeholder — pending T-4.10 ─────────────────────
+    // ── 7. INV-16 end-to-end — enabled by T-4.10 ──────────────────
 
     @Test
-    @Disabled("INV-16 end-to-end: usedAsrFallback set exactly once in SELECTING_FORMATS — " +
-              "requires CaptionSelection → DownloadResult wiring from T-4.10")
-    @DisplayName("INV-16: usedAsrFallback set exactly once during format selection (pending T-4.10)")
-    void inv16_setExactlyOnceInSelectingFormats_pendingT4_10() {
-        // T-4.10 will enable this test and verify:
-        // 1. FormatSelector.selectCaption() returns CaptionSelection with usedAsrFallback=true
-        //    when ASR fallback is triggered
-        // 2. The orchestrator propagates that flag into DownloadResult exactly once
-        // 3. No later state transition modifies the flag
+    @DisplayName("INV-16: usedAsrFallback set exactly once during format selection, propagated to DownloadResult")
+    void inv16_setExactlyOnceInSelectingFormats_endToEnd() {
+        // ASR-only fixture → FormatSelector.selectCaption returns usedAsrFallback=true
+        // Orchestrator propagates that flag into DownloadResult exactly once
+        String asrFixture = loadFixture("/fixtures/innertube-response-asr-only.json");
+        String captionXml = """
+                <?xml version="1.0" encoding="utf-8"?>
+                <transcript>
+                  <text start="0.5" dur="2.0">Hello world</text>
+                </transcript>
+                """;
+
+        OkHttpClient captionHttp = new OkHttpClient.Builder()
+                .addInterceptor(chain -> new Response.Builder()
+                        .request(chain.request())
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(200)
+                        .message("OK")
+                        .body(ResponseBody.create(captionXml, MediaType.get("text/xml")))
+                        .build())
+                .build();
+
+        YoutubeDownloader sut = new YoutubeDownloader(
+                new UrlParser(),
+                new InnerTubeClient(interceptorReturning(200, asrFixture)),
+                new FormatSelector(),
+                new StreamDownloader(interceptorReturning(200, FAKE_AUDIO)),
+                req -> req.ffmpegLocation().map(FfmpegMuxer::new).orElseGet(FfmpegMuxer::new),
+                new CaptionDownloader(captionHttp),
+                ThumbnailDownloader.create());
+
+        DownloadRequest request = new DownloadRequest(
+                VALID_URL, true, AudioFormat.M4A, 0, Optional.empty(),
+                true, Optional.empty(), false, outputDir(tempDir),
+                ProgressListener.NO_OP, false, false);
+
+        DownloadResult result = sut.download(request);
+
+        // INV-16: usedAsrFallback is set by FormatSelector during SELECTING_FORMATS,
+        // propagated unchanged through the orchestrator to DownloadResult
+        assertThat(result.usedAsrFallback())
+                .as("INV-16: usedAsrFallback=true when ASR fallback triggered in SELECTING_FORMATS")
+                .isTrue();
+        assertThat(result.srtPath()).isPresent();
+        assertThat(result.txtPath()).isPresent();
     }
 
     // ── helpers ──────────────────────────────────────────────────────

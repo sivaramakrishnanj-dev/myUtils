@@ -1,9 +1,11 @@
 package com.srk.myutils.yd.cli;
 
+import com.srk.myutils.yd.core.CaptionDownloader;
 import com.srk.myutils.yd.core.FfmpegMuxer;
 import com.srk.myutils.yd.core.FormatSelector;
 import com.srk.myutils.yd.core.InnerTubeClient;
 import com.srk.myutils.yd.core.StreamDownloader;
+import com.srk.myutils.yd.core.ThumbnailDownloader;
 import com.srk.myutils.yd.core.UrlParser;
 import com.srk.myutils.yd.core.YoutubeDownloader;
 import okhttp3.MediaType;
@@ -20,13 +22,22 @@ import java.nio.file.Path;
 
 /**
  * Builds a {@link YoutubeDownloader} backed by a canned InnerTube response
- * and fake stream/ffmpeg for CLI tests that need valid-URL → exit 0 without
- * network I/O or real ffmpeg.
+ * and fake stream/ffmpeg/caption/thumbnail for CLI tests that need
+ * valid-URL → exit 0 without network I/O or real ffmpeg.
  */
 final class FakeDownloaderFactory {
 
     private static final MediaType OCTET = MediaType.get("application/octet-stream");
     private static final byte[] FAKE_BYTES = {0x00, 0x01, 0x02, 0x03};
+
+    private static final String FAKE_TIMEDTEXT_XML = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <transcript>
+              <text start="0.5" dur="2.0">Hello world</text>
+            </transcript>
+            """;
+
+    private static final byte[] FAKE_JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0};
 
     private FakeDownloaderFactory() { }
 
@@ -56,12 +67,35 @@ final class FakeDownloaderFactory {
                         .build())
                 .build();
 
+        OkHttpClient fakeCaptionHttp = new OkHttpClient.Builder()
+                .addInterceptor(chain -> new Response.Builder()
+                        .request(chain.request())
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(200)
+                        .message("OK")
+                        .body(ResponseBody.create(FAKE_TIMEDTEXT_XML,
+                                MediaType.get("text/xml")))
+                        .build())
+                .build();
+
+        OkHttpClient fakeThumbnailHttp = new OkHttpClient.Builder()
+                .addInterceptor(chain -> new Response.Builder()
+                        .request(chain.request())
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(200)
+                        .message("OK")
+                        .body(ResponseBody.create(FAKE_JPEG, OCTET))
+                        .build())
+                .build();
+
         return new YoutubeDownloader(
                 new UrlParser(),
                 new InnerTubeClient(fakeInnerTubeHttp),
                 new FormatSelector(),
                 new StreamDownloader(fakeStreamHttp),
-                req -> new FfmpegMuxer(fakeFfmpegPath()));
+                req -> new FfmpegMuxer(fakeFfmpegPath()),
+                new CaptionDownloader(fakeCaptionHttp),
+                new ThumbnailDownloader(fakeThumbnailHttp));
     }
 
     /**
