@@ -28,6 +28,63 @@ public final class CaptionConverter {
     private CaptionConverter() {}
 
     /**
+     * Converts caption cues to plain text with duplicate-prefix collapsing (AC-6.2, § 2.8).
+     * One line per cue, no timestamps, no cue numbers, no blank separator lines.
+     * If cue N+1's text starts with cue N's text, cue N is collapsed (dropped).
+     *
+     * @param cues ordered list of caption cues
+     * @return plain-text lines joined by newline
+     */
+    public static String toTxt(List<CaptionCue> cues) {
+        List<String> lines = new ArrayList<>();
+        for (int i = 0; i < cues.size(); i++) {
+            String text = cues.get(i).text();
+            if (i + 1 < cues.size() && cues.get(i + 1).text().startsWith(text)) {
+                continue;
+            }
+            lines.add(text);
+        }
+        return String.join("\n", lines);
+    }
+
+    /**
+     * Formats a list of caption cues as an SRT document string (AC-6.2).
+     * Sequential cue numbers starting from 1, HH:MM:SS,mmm timestamps,
+     * blank line between cues.
+     *
+     * @param cues ordered list of caption cues
+     * @return SRT-formatted string
+     */
+    public static String toSrt(List<CaptionCue> cues) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < cues.size(); i++) {
+            if (i > 0) {
+                sb.append('\n');
+            }
+            CaptionCue cue = cues.get(i);
+            sb.append(i + 1).append('\n');
+            sb.append(formatSrtTimestamp(cue.startMs()))
+              .append(" --> ")
+              .append(formatSrtTimestamp(cue.endMs()))
+              .append('\n');
+            sb.append(cue.text()).append('\n');
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Formats milliseconds as an SRT timestamp: HH:MM:SS,mmm.
+     */
+    static String formatSrtTimestamp(long ms) {
+        long totalSeconds = ms / 1000;
+        long millis = ms % 1000;
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+        return String.format("%02d:%02d:%02d,%03d", hours, minutes, seconds, millis);
+    }
+
+    /**
      * Parses timedtext XML into an ordered list of caption cues.
      *
      * @param xml raw XML string from YouTube's timedtext endpoint
