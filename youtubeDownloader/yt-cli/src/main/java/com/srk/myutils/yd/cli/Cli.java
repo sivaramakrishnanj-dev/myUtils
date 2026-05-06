@@ -135,9 +135,10 @@ public final class Cli implements Callable<Integer> {
         } catch (Throwable t) {
             PrintWriter err = spec.commandLine().getErr();
             ErrorReport report = ErrorMapper.map(t);
-            LOGGER.error(report.message(), t);
+            LOGGER.error(report.message());
             err.println(report.message());
             if (debug) {
+                LOGGER.debug("Stack trace for above error:", t);
                 t.printStackTrace(err);
             }
             return report.exitCode();
