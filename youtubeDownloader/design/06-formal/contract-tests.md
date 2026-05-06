@@ -1,6 +1,6 @@
 ---
 doc: contract-tests
-last_reviewed: 2026-05-03
+last_reviewed: 2026-05-06
 phase: 3-formal
 status: draft
 ---
@@ -21,7 +21,7 @@ This is the **implementation checklist for Phase 5 test writing**. Every row in 
 
 | ID | Fixture | Scenario | Expected |
 |---|---|---|---|
-| `CT-REQ-1` | `fixtures/innertube-request-happy.json` | Well-formed ANDROID request with videoId `dQw4w9WgXcQ`, v19.09.37, Android 14 SDK 34, hl=en, gl=US | VALID |
+| `CT-REQ-1` | `fixtures/innertube-request-happy.json` | Well-formed ANDROID request with videoId `dQw4w9WgXcQ`, v21.02.35, Android 11 SDK 30, hl=en, gl=US | VALID |
 
 ### Negative cases (synthesized inline in test code)
 

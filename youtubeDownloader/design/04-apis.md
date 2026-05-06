@@ -1,6 +1,6 @@
 ---
 doc: apis
-last_reviewed: 2026-05-03
+last_reviewed: 2026-05-06
 phase: 2-design
 status: resolved
 review: reviews/2026-05-03-design-04-apis-r1.md
@@ -29,9 +29,9 @@ This document is the **contract reference** for every boundary youtubeDownloader
 | Header | Value | Source |
 |---|---|---|
 | `Content-Type` | `application/json` | — |
-| `User-Agent` | `com.google.android.youtube/19.09.37 (Linux; U; Android 14) gzip` | `NFR-ANDROID-USER-AGENT` |
+| `User-Agent` | `com.google.android.youtube/21.02.35 (Linux; U; Android 11) gzip` | `NFR-ANDROID-USER-AGENT` |
 | `X-YouTube-Client-Name` | `3` | Canonical ANDROID client ID |
-| `X-YouTube-Client-Version` | `19.09.37` | `NFR-ANDROID-CLIENT-VERSION` |
+| `X-YouTube-Client-Version` | `21.02.35` | `NFR-ANDROID-CLIENT-VERSION` |
 | `Accept-Language` | `en-US,en;q=0.9` | Matches `hl` in body |
 
 #### 1.1.2 Request body shape
@@ -42,12 +42,12 @@ This document is the **contract reference** for every boundary youtubeDownloader
   "context": {
     "client": {
       "clientName": "ANDROID",
-      "clientVersion": "19.09.37",
-      "androidSdkVersion": 34,
+      "clientVersion": "21.02.35",
+      "androidSdkVersion": 30,
       "hl": "en",
       "gl": "US",
       "osName": "Android",
-      "osVersion": "14",
+      "osVersion": "11",
       "platform": "MOBILE"
     }
   }

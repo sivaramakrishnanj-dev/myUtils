@@ -1,6 +1,6 @@
 ---
 doc: overview
-last_reviewed: 2026-05-03
+last_reviewed: 2026-05-06
 phase: 2-design
 status: resolved
 review: reviews/2026-05-03-design-01-overview-r1.md
@@ -137,7 +137,7 @@ The single InnerTube call per run (AC-1.2, AC-12.3). Returns a JSON payload from
 
 The request body is constructed with `context.client` = ANDROID v`NFR-ANDROID-CLIENT-VERSION`, `androidSdkVersion = NFR-ANDROID-SDK-VERSION`, `hl = NFR-INNERTUBE-HL`, `gl = NFR-INNERTUBE-GL`. The HTTP `User-Agent` is `NFR-ANDROID-USER-AGENT`. All values are pinned in Phase 1c Group 2.
 
-> **Fragility note.** The ANDROID client path was chosen because, as of the Phase 1 capture date, it returns CDN URLs without requiring JavaScript signature deciphering. YouTube tightens anti-abuse defences regularly; the ANDROID client version we pin (`19.09.37`) may become ineffective without notice. Response-shape tests (Phase 3 `06-formal/`) and the category-11 exit code (AC-5.2 — "InnerTube response parse error") are our early-warning system.
+> **Fragility note.** The ANDROID client path was chosen because, as of the Phase 1 capture date, it returns CDN URLs without requiring JavaScript signature deciphering. YouTube tightens anti-abuse defences regularly; the ANDROID client version we pin (`21.02.35`) may become ineffective without notice. Response-shape tests (Phase 3 `06-formal/`) and the category-11 exit code (AC-5.2 — "InnerTube response parse error") are our early-warning system.
 
 ### Upstream 2: YouTube video CDN (`googlevideo.com`)
 
@@ -214,7 +214,7 @@ Every assumption that might force a future design round has a home in this list 
 
 | # | Assumption | Why it matters | Owner | Target resolution |
 |---|---|---|---|---|
-| OQ-A | **The ANDROID client version triplet (`19.09.37`, SDK 34, matching User-Agent) still works against InnerTube `/player` without signature deciphering** at the time Phase 5 implementation begins | If the pinned version has been deprecated by YouTube's anti-abuse, the tool fails on first contact and an NFR round is needed to roll forward. The specific failure mode (exit `10` network vs exit `11` parse vs exit `30` no formats) depends on how YouTube rejects the request. | srk | Before Phase 5 implementation begins. Verify by issuing one real request during a Phase 2 ADR write-up (planned: ADR 0001 — ANDROID InnerTube client). |
+| OQ-A | **The ANDROID client version triplet (`21.02.35`, SDK 30, matching User-Agent) still works against InnerTube `/player` without signature deciphering** at the time Phase 5 implementation begins. *(Triplet refreshed from 19.09.37/SDK 34/Android 14 at commit 9501351 — see DCR-1.)* | If the pinned version has been deprecated by YouTube's anti-abuse, the tool fails on first contact and an NFR round is needed to roll forward. The specific failure mode (exit `10` network vs exit `11` parse vs exit `30` no formats) depends on how YouTube rejects the request. | srk | Before Phase 5 implementation begins. Verify by issuing one real request during a Phase 2 ADR write-up (planned: ADR 0001 — ANDROID InnerTube client). |
 | OQ-B | **The unlimited total stream download timeout (`NFR-STREAM-DOWNLOAD-TIMEOUT = unlimited`) is safe in practice** — i.e., the 30s idle-read timeout between bytes is sufficient protection against a stalled CDN socket | If a production-ish run shows a hung stream where `Content-Length` bytes arrive in very slow bursts (e.g., one byte every 29s), the download could legitimately take days without tripping any timeout. Probably fine, but worth confirming. | srk | After Phase 5 — gather evidence from real runs; if a hang is observed, add `NFR-STREAM-TOTAL-CAP` in an NFR round. |
 | OQ-C | **80% line-coverage gate on the library module is achievable without test pathology** — i.e., without tests that poke at trivial getters to pad coverage | Worst case is either (a) we drop the gate because it forces bad tests, or (b) we keep the gate and accept some trivial-test smell. Either is survivable. | srk | Phase 5 — after the first ADR-worthy parser / selector is implemented and its real tests are written, evaluate whether 80% is honest. If not, adjust in an NFR round. |
 | OQ-D | **The `.yt-tmp/` convention for temp files (`NFR-TEMP-DIR-STRATEGY`) is OK with users** — i.e., nobody cares about a hidden subdirectory appearing in their output folder briefly and being cleaned on success | Alternative is a system temp dir via `Files.createTempDirectory()`. The trade-off is same-filesystem rename (fast) vs clean separation (safer on some configurations). | srk | Phase 2 — may surface in `02-architecture.md` and be resolved with an ADR. |
