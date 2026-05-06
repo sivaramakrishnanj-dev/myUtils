@@ -3,12 +3,12 @@
   "context": {
     "client": {
       "clientName": "ANDROID",
-      "clientVersion": "19.09.37",
-      "androidSdkVersion": 34,
+      "clientVersion": "21.02.35",
+      "androidSdkVersion": 30,
       "hl": "en",
       "gl": "US",
       "osName": "Android",
-      "osVersion": "14",
+      "osVersion": "11",
       "platform": "MOBILE"
     }
   }

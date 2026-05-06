@@ -1,6 +1,6 @@
 ---
 doc: requirements
-last_reviewed: 2026-05-03
+last_reviewed: 2026-05-06
 phase: resolved   # 1a-user-stories | 1b-acceptance-criteria | 1c-nfrs | resolved
 status: resolved
 phase_1a_approved_in: 1481921
@@ -9,6 +9,7 @@ phase_1b_approved_in: d300785
 phase_1b_review: reviews/2026-05-02-requirements-phase-1b-r1.md
 phase_1c_approved_in: 41eefc0
 phase_1c_review: reviews/2026-05-03-requirements-phase-1c-r1.md
+amendment_dcr1_review: reviews/2026-05-06-amendment-nfr-android-client-bump-r1.md
 ---
 
 # 00 — Requirements
@@ -470,9 +471,9 @@ These values define how we identify ourselves to YouTube's reverse-engineered In
 
 | NFR | Value | Rationale |
 |---|---|---|
-| `NFR-ANDROID-CLIENT-VERSION` | **`19.09.37`** | Stable Android YouTube app version observed to work with InnerTube `/player` via the ANDROID client context without signature deciphering. Source for future updates: inspect the current Android app's `User-Agent` and `context.client.clientVersion` in a live request. An ADR in Phase 2 will record the client-choice decision. |
-| `NFR-ANDROID-USER-AGENT` | **`com.google.android.youtube/19.09.37 (Linux; U; Android 14) gzip`** | The exact `User-Agent` the Android YouTube app sends. Must match the `clientVersion` in the request body (mismatched versions occasionally trigger anti-abuse responses). |
-| `NFR-ANDROID-SDK-VERSION` | **`34`** | Android 14 SDK level. Matches the OS string in the User-Agent. Sent in the InnerTube `context.client.androidSdkVersion` field. |
+| `NFR-ANDROID-CLIENT-VERSION` | **`21.02.35`** | Android YouTube app version observed to work with InnerTube `/player` via the ANDROID client context without signature deciphering. Bumped from `19.09.37` on 2026-05-06 (DCR-1) after the prior version began returning HTTP 400. Source: current yt-dlp master. See ADR-0001 § Client-version refresh log. |
+| `NFR-ANDROID-USER-AGENT` | **`com.google.android.youtube/21.02.35 (Linux; U; Android 11) gzip`** | The exact `User-Agent` the Android YouTube app sends. Must match the `clientVersion` in the request body (mismatched versions occasionally trigger anti-abuse responses). Bumped from `19.09.37 / Android 14` on 2026-05-06 (DCR-1). |
+| `NFR-ANDROID-SDK-VERSION` | **`30`** | Android 11 SDK level. Matches the OS string in the User-Agent. Sent in the InnerTube `context.client.androidSdkVersion` field. Bumped from `34` (Android 14) on 2026-05-06 (DCR-1). |
 | `NFR-INNERTUBE-HL` | **`en`** | `context.client.hl` — UI language hint. English keeps response strings predictable for log parsing. Unaffected by the caption-language preference chain in AC-8.1. |
 | `NFR-INNERTUBE-GL` | **`US`** | `context.client.gl` — geolocation hint. `US` gives the broadest catalog access by default. Users who care about geo-restricted videos are outside MVP scope (OOS-6). |
 

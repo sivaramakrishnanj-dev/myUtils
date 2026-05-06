@@ -21,7 +21,7 @@ Two forces shape the choice of which non-web client to use:
 
 yt-dlp's own default (as of early 2026) uses `android_vr,web_safari` with fallback logic based on age-restriction, premium status, and logged-in state. That complexity is out of scope for an MVP. We need one simple default that works for public, non-live, non-age-restricted videos (OOS-3, OOS-6, OOS-7).
 
-AC-12.1, AC-12.2, and AC-12.3 already require a consistent `context.client` block and a plausible `User-Agent` for every InnerTube request. NFR-ANDROID-CLIENT-VERSION (`19.09.37`), NFR-ANDROID-SDK-VERSION (`34`), NFR-ANDROID-USER-AGENT, NFR-INNERTUBE-HL (`en`), and NFR-INNERTUBE-GL (`US`) already pin the specific values. This ADR records the reasoning behind choosing the ANDROID client family in the first place.
+AC-12.1, AC-12.2, and AC-12.3 already require a consistent `context.client` block and a plausible `User-Agent` for every InnerTube request. NFR-ANDROID-CLIENT-VERSION (`21.02.35`), NFR-ANDROID-SDK-VERSION (`30`), NFR-ANDROID-USER-AGENT, NFR-INNERTUBE-HL (`en`), and NFR-INNERTUBE-GL (`US`) already pin the specific values. This ADR records the reasoning behind choosing the ANDROID client family in the first place.
 
 ## Decision
 
@@ -100,6 +100,20 @@ Rejected as gold-plating for MVP. Adding a fallback client when the primary fail
 - The Android client returns `videoDetails.audioLanguage` reliably, which is what AC-8.1 step 3 depends on for caption-language resolution. No change to the caption logic.
 - Thumbnail URLs in the Android response are identical to the web response's — no downstream difference.
 - The CDN URLs returned by the Android client for `googlevideo.com` are the same format as the web client's, so the `StreamDownloader` component does not care which client sourced the URL (§ 1.2.2).
+
+## Client-version refresh log
+
+This section records each time the ANDROID client triplet is updated. The pattern for future refreshes:
+
+1. Observe the failure mode (HTTP 400/403, empty `streamingData`, etc.).
+2. Inspect current yt-dlp master's `INNERTUBE_CLIENTS['android']` for the working triplet.
+3. Optionally verify with a single live request using the candidate values.
+4. Raise a DCR (design-change request) updating `NFR-ANDROID-CLIENT-VERSION`, `NFR-ANDROID-SDK-VERSION`, `NFR-ANDROID-USER-AGENT` in `00-requirements.md` Phase 1c Group 2, plus the schema example and fixture.
+5. After the amendment lands, the implementer updates the code constants and the tester re-verifies.
+
+| # | Date | Old triplet | New triplet | Trigger | DCR |
+|---|---|---|---|---|---|
+| 1 | 2026-05-06 | `19.09.37` / SDK 34 / Android 14 | `21.02.35` / SDK 30 / Android 11 | HTTP 400 from `/player` on video `Y8IAS4999-Q`. Risk R-1 manifested. | DCR-1 (T-1.5) |
 
 ## References
 
