@@ -84,7 +84,7 @@ class YoutubeDownloaderAudioOnlyTest {
                 output,
                 ProgressListener.NO_OP,
                 false,
-                false);
+                false, false);
 
         DownloadResult result = sut.download(request);
 

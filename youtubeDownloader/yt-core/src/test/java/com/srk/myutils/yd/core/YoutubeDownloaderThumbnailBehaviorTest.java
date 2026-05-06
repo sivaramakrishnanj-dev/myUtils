@@ -147,7 +147,7 @@ class YoutubeDownloaderThumbnailBehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, true, AudioFormat.M4A, 0, Optional.empty(),
                     false, Optional.empty(), false,
-                    outputDir(tempDir), ProgressListener.NO_OP, false, false);
+                    outputDir(tempDir), ProgressListener.NO_OP, false, false, false);
 
             DownloadResult result = sut.download(request);
 
@@ -195,7 +195,7 @@ class YoutubeDownloaderThumbnailBehaviorTest {
         return new DownloadRequest(
                 VALID_URL, true, AudioFormat.M4A, 0, Optional.empty(),
                 false, Optional.empty(), false,
-                outputDir(tempDir), ProgressListener.NO_OP, false, true);
+                outputDir(tempDir), ProgressListener.NO_OP, false, true, false);
     }
 
     private static OutputConfig outputDir(Path dir) {

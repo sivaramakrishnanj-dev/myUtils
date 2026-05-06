@@ -75,7 +75,7 @@ class YoutubeDownloaderFlowCTest {
                 VALID_URL, false, AudioFormat.M4A, 1080, Optional.empty(),
                 true, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
-                ProgressListener.NO_OP, false, false);
+                ProgressListener.NO_OP, false, false, false);
 
         DownloadResult result = sut.download(request);
 

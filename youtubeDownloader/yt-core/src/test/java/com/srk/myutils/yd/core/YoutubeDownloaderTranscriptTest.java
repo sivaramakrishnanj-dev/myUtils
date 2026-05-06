@@ -88,7 +88,7 @@ class YoutubeDownloaderTranscriptTest {
                 true, AudioFormat.M4A, 0, Optional.empty(),
                 true, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
-                ProgressListener.NO_OP, false, false);
+                ProgressListener.NO_OP, false, false, false);
 
         DownloadResult result = downloader.download(request);
 

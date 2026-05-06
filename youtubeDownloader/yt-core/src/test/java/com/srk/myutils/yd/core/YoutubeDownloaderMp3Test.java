@@ -90,7 +90,7 @@ class YoutubeDownloaderMp3Test {
                 VALID_URL, true, AudioFormat.MP3, 0,
                 Optional.of(fakeFfmpegScript.toString()),
                 false, Optional.empty(), false,
-                output, ProgressListener.NO_OP, false, false);
+                output, ProgressListener.NO_OP, false, false, false);
 
         DownloadResult result = sut.download(request);
 

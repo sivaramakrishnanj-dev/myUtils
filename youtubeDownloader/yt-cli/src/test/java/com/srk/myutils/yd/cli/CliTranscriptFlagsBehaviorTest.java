@@ -159,7 +159,7 @@ class CliTranscriptFlagsBehaviorTest {
                 Optional.empty(),
                 true, Optional.of("en"), true,
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
-                ProgressListener.NO_OP, false, false);
+                ProgressListener.NO_OP, false, false, false);
 
         assertThat(request.transcript()).isTrue();
         assertThat(request.lang()).isPresent().hasValue("en");
@@ -174,7 +174,7 @@ class CliTranscriptFlagsBehaviorTest {
                 Optional.empty(),
                 false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
-                ProgressListener.NO_OP, false, false);
+                ProgressListener.NO_OP, false, false, false);
 
         assertThat(request.transcript()).isFalse();
         assertThat(request.lang()).isEmpty();

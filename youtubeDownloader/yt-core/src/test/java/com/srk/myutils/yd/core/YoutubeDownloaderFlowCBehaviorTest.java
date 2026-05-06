@@ -106,7 +106,7 @@ class YoutubeDownloaderFlowCBehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, true, AudioFormat.M4A, 0, Optional.empty(),
                     true, Optional.empty(), false,
-                    outputDir(), ProgressListener.NO_OP, false, false);
+                    outputDir(), ProgressListener.NO_OP, false, false, false);
 
             DownloadResult result = sut.download(request);
 
@@ -126,7 +126,7 @@ class YoutubeDownloaderFlowCBehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, true, AudioFormat.MP3, 0, Optional.empty(),
                     true, Optional.empty(), false,
-                    outputDir(), ProgressListener.NO_OP, false, false);
+                    outputDir(), ProgressListener.NO_OP, false, false, false);
 
             DownloadResult result = sut.download(request);
 
@@ -153,7 +153,7 @@ class YoutubeDownloaderFlowCBehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, false, AudioFormat.M4A, 1080, Optional.empty(),
                     false, Optional.empty(), false,
-                    outputDir(), ProgressListener.NO_OP, false, false);
+                    outputDir(), ProgressListener.NO_OP, false, false, false);
 
             DownloadResult result = sut.download(request);
 
@@ -171,7 +171,7 @@ class YoutubeDownloaderFlowCBehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, true, AudioFormat.M4A, 0, Optional.empty(),
                     false, Optional.empty(), false,
-                    outputDir(), ProgressListener.NO_OP, false, false);
+                    outputDir(), ProgressListener.NO_OP, false, false, false);
 
             DownloadResult result = sut.download(request);
 
@@ -395,7 +395,7 @@ class YoutubeDownloaderFlowCBehaviorTest {
         return new DownloadRequest(
                 VALID_URL, false, AudioFormat.M4A, 1080, Optional.empty(),
                 true, lang, noAsr,
-                outputDir(), ProgressListener.NO_OP, false, thumbnail);
+                outputDir(), ProgressListener.NO_OP, false, thumbnail, false);
     }
 
     private OutputConfig outputDir() {

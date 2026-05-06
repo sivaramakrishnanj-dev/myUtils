@@ -95,7 +95,7 @@ class DownloadResultAsrBehaviorTest {
         DownloadRequest request = new DownloadRequest(
                 VALID_URL, false, AudioFormat.M4A, 1080, Optional.empty(),
                 false, Optional.empty(), false, outputDir(tempDir),
-                ProgressListener.NO_OP, false, false);
+                ProgressListener.NO_OP, false, false, false);
 
         DownloadResult result = sut.download(request);
 
@@ -112,7 +112,7 @@ class DownloadResultAsrBehaviorTest {
         DownloadRequest request = new DownloadRequest(
                 VALID_URL, true, AudioFormat.M4A, 0, Optional.empty(),
                 false, Optional.empty(), false, outputDir(tempDir),
-                ProgressListener.NO_OP, false, false);
+                ProgressListener.NO_OP, false, false, false);
 
         DownloadResult result = sut.download(request);
 
@@ -135,7 +135,7 @@ class DownloadResultAsrBehaviorTest {
         DownloadRequest request = new DownloadRequest(
                 VALID_URL, true, AudioFormat.MP3, 0, Optional.empty(),
                 false, Optional.empty(), false, outputDir(tempDir),
-                ProgressListener.NO_OP, false, false);
+                ProgressListener.NO_OP, false, false, false);
 
         DownloadResult result = sut.download(request);
 
@@ -155,7 +155,7 @@ class DownloadResultAsrBehaviorTest {
         DownloadResult audioResult = sut.download(new DownloadRequest(
                 VALID_URL, true, AudioFormat.M4A, 0, Optional.empty(),
                 false, Optional.empty(), false, outputDir(tempDir),
-                ProgressListener.NO_OP, false, false));
+                ProgressListener.NO_OP, false, false, false));
 
         assertThat(audioResult.usedAsrFallback())
                 .as("No orchestrator path flips usedAsrFallback to true until T-4.10")
@@ -199,7 +199,7 @@ class DownloadResultAsrBehaviorTest {
         DownloadRequest request = new DownloadRequest(
                 VALID_URL, true, AudioFormat.M4A, 0, Optional.empty(),
                 true, Optional.empty(), false, outputDir(tempDir),
-                ProgressListener.NO_OP, false, false);
+                ProgressListener.NO_OP, false, false, false);
 
         DownloadResult result = sut.download(request);
 

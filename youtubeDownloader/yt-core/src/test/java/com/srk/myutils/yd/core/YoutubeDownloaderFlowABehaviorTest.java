@@ -178,7 +178,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                 Optional.of(fakeFfmpegScript.toString()),
                 false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
-                ProgressListener.NO_OP, debug, false);
+                ProgressListener.NO_OP, debug, false, false);
     }
 
     private DownloadRequest flowARequest() {
@@ -250,7 +250,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     Optional.of(fakeFfmpegScript.toString()),
                     false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
-                    ProgressListener.NO_OP, false, false);
+                    ProgressListener.NO_OP, false, false, false);
 
             assertThatThrownBy(() -> dl.download(request))
                     .isInstanceOf(NoMatchingFormatException.class)
@@ -291,7 +291,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     Optional.of(badFfmpeg.toString()),
                     false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
-                    ProgressListener.NO_OP, false, false)))
+                    ProgressListener.NO_OP, false, false, false)))
                     .isInstanceOf(FfmpegException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(60));
 
@@ -376,7 +376,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     Optional.of(failMuxFfmpeg.toString()),
                     false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
-                    ProgressListener.NO_OP, false, false)))
+                    ProgressListener.NO_OP, false, false, false)))
                     .isInstanceOf(FfmpegException.class)
                     .satisfies(e -> assertThat(((YoutubeDownloaderException) e).exitCode()).isEqualTo(60));
 
@@ -486,7 +486,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     Optional.of(fakeFfmpegScript.toString()),
                     false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
-                    capturing, false, false);
+                    capturing, false, false, false);
 
             dl.download(request);
 
@@ -584,7 +584,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     Optional.of(failMux.toString()),
                     false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
-                    ProgressListener.NO_OP, false, false)))
+                    ProgressListener.NO_OP, false, false, false)))
                     .isInstanceOf(FfmpegException.class);
 
             assertThat(Files.exists(tempDir.resolve(".yt-tmp"))).isTrue();
@@ -612,7 +612,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     Optional.of(fakeFfmpegScript.toString()),
                     false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
-                    ProgressListener.NO_OP, false, false));
+                    ProgressListener.NO_OP, false, false, false));
 
             assertThat(result.videoPath()).isPresent();
             assertThat(result.videoPath().get().getFileName().toString()).endsWith(".mp4");
@@ -642,7 +642,7 @@ class YoutubeDownloaderFlowABehaviorTest {
                     Optional.of(fakeFfmpegScript.toString()),
                     false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), true),
-                    ProgressListener.NO_OP, false, false);
+                    ProgressListener.NO_OP, false, false, false);
 
             DownloadResult result = dl.download(request);
 

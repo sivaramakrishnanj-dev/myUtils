@@ -53,6 +53,9 @@ public final class Cli implements Callable<Integer> {
     @Option(names = "--audio-only", description = "Download audio only (no video)")
     private boolean audioOnly;
 
+    @Option(names = "--video", description = "Include muxed MP4 output (US-1)")
+    private Boolean video;
+
     @Option(names = "--audio-format", description = "Audio output format: m4a (default) or mp3 (requires ffmpeg)",
             defaultValue = "m4a")
     private String audioFormatStr;
@@ -107,6 +110,7 @@ public final class Cli implements Callable<Integer> {
                 LOGGER.warn("--audio-format mp3 implies --audio-only; treating as audio-only (AC-2.4)");
                 audioOnly = true;
             }
+            boolean effectiveVideo = computeEffectiveVideo();
             DownloadRequest request = new DownloadRequest(
                     url,
                     audioOnly,
@@ -122,7 +126,8 @@ public final class Cli implements Callable<Integer> {
                             force),
                     listener,
                     debug,
-                    thumbnail);
+                    thumbnail,
+                    effectiveVideo);
             DownloadResult result = downloader.download(request);
             LOGGER.info("Downloaded: videoId={} title={}",
                     result.videoId().value(), result.title());
@@ -164,6 +169,32 @@ public final class Cli implements Callable<Integer> {
             default -> throw new UrlParseException(
                     "--audio-format must be 'm4a' or 'mp3', got: " + value);
         };
+    }
+
+    /**
+     * Computes the effective {@code video} flag per 04-apis.md § 3.1.2:
+     * default is {@code true} when neither {@code --audio-only} nor
+     * {@code --transcript}/{@code --thumbnail} alone is given.
+     * Explicit {@code --video} overrides the default — except when
+     * {@code audioOnly} is true, which forces video=false (AC-2.5).
+     *
+     * <p>Must be called AFTER any --audio-format mp3 coercion (since mp3
+     * implies audioOnly=true, which in turn forces effectiveVideo=false).
+     */
+    private boolean computeEffectiveVideo() {
+        if (audioOnly) {
+            if (Boolean.TRUE.equals(video)) {
+                LOGGER.warn("--audio-only combined with --video; ignoring --video (AC-2.5)");
+            }
+            return false;
+        }
+        if (video != null) {
+            return video;
+        }
+        if (transcript || thumbnail) {
+            return false;
+        }
+        return true;
     }
 
     /**

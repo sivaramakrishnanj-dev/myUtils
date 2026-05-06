@@ -94,7 +94,7 @@ class CliThumbnailBehaviorTest {
                 VALID_URL, false, AudioFormat.M4A, 1080,
                 Optional.empty(), false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
-                ProgressListener.NO_OP, false, true);
+                ProgressListener.NO_OP, false, true, false);
 
         assertThat(request.thumbnail()).isTrue();
     }

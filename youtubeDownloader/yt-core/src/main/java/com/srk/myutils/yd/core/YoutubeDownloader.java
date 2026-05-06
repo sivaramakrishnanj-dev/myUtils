@@ -129,7 +129,8 @@ public final class YoutubeDownloader {
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 listener,
                 false,
-                false));
+                false,
+                true));
     }
 
     /**
@@ -159,7 +160,7 @@ public final class YoutubeDownloader {
         LOGGER.info("Metadata resolved: videoId={} title={}",
                 videoId.value(), player.videoDetails().title());
 
-        if (request.transcript() && !request.audioOnly()) {
+        if (request.transcript() && !request.audioOnly() && !request.video()) {
             return downloadTranscriptOnly(request, videoId, player);
         }
 

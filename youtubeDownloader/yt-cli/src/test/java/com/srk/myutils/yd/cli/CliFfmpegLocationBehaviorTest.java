@@ -108,7 +108,7 @@ class CliFfmpegLocationBehaviorTest {
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 ProgressListener.NO_OP,
                 false,
-                false);
+                false, false);
 
         assertThat(request.ffmpegLocation()).isPresent()
                 .hasValue("/custom/ffmpeg");

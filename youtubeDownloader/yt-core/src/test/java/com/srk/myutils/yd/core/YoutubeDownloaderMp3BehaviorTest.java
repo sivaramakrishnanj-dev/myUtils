@@ -120,7 +120,7 @@ class YoutubeDownloaderMp3BehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, true, AudioFormat.M4A, 0,
                     Optional.empty(), false, Optional.empty(), false,
-                    outputDir(tempDir), ProgressListener.NO_OP, false, false);
+                    outputDir(tempDir), ProgressListener.NO_OP, false, false, false);
 
             DownloadResult result = sut.download(request);
 
@@ -148,7 +148,7 @@ class YoutubeDownloaderMp3BehaviorTest {
                     VALID_URL, true, AudioFormat.MP3, 0,
                     Optional.of(fakeFfmpegScript.toString()),
                     false, Optional.empty(), false,
-                    outputDir(tempDir), ProgressListener.NO_OP, false, false);
+                    outputDir(tempDir), ProgressListener.NO_OP, false, false, false);
 
             DownloadResult result = sut.download(request);
 
@@ -272,7 +272,7 @@ class YoutubeDownloaderMp3BehaviorTest {
                     Optional.of(failTranscodeFfmpeg.toString()),
                     false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(outputSubDir), false),
-                    ProgressListener.NO_OP, false, false);
+                    ProgressListener.NO_OP, false, false, false);
 
             assertThatThrownBy(() -> sut.download(request))
                     .isInstanceOf(FfmpegException.class);
@@ -313,7 +313,7 @@ class YoutubeDownloaderMp3BehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, true, AudioFormat.M4A, 0,
                     Optional.empty(), false, Optional.empty(), false,
-                    outputDir(tempDir), ProgressListener.NO_OP, false, false);
+                    outputDir(tempDir), ProgressListener.NO_OP, false, false, false);
 
             DownloadResult result = sut.download(request);
 
@@ -352,7 +352,7 @@ class YoutubeDownloaderMp3BehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, true, AudioFormat.M4A, 0,
                     Optional.empty(), false, Optional.empty(), false,
-                    outputDir(tempDir), ProgressListener.NO_OP, false, false);
+                    outputDir(tempDir), ProgressListener.NO_OP, false, false, false);
 
             DownloadResult result = sut.download(request);
 
@@ -406,7 +406,7 @@ class YoutubeDownloaderMp3BehaviorTest {
         return new DownloadRequest(
                 VALID_URL, true, AudioFormat.MP3, 0,
                 Optional.empty(), false, Optional.empty(), false,
-                output, ProgressListener.NO_OP, false, false);
+                output, ProgressListener.NO_OP, false, false, false);
     }
 
     private static OutputConfig outputDir(Path dir) {

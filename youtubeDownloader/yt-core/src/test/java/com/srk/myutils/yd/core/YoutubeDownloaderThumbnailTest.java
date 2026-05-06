@@ -80,7 +80,7 @@ class YoutubeDownloaderThumbnailTest {
                 true, AudioFormat.M4A, 0, Optional.empty(),
                 false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
-                ProgressListener.NO_OP, false, true);
+                ProgressListener.NO_OP, false, true, false);
 
         DownloadResult result = downloader.download(request);
 
