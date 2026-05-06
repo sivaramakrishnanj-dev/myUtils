@@ -1,5 +1,7 @@
 # youtubeDownloader
 
+[![CI](https://github.com/sivarj/youtubeDownloader/actions/workflows/ci.yml/badge.svg)](https://github.com/sivarj/youtubeDownloader/actions/workflows/ci.yml)
+
 A single-site YouTube downloader in Java — video, audio, transcript, thumbnail — from a single video URL.
 
 ## Requirements
