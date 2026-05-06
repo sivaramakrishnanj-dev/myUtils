@@ -5,7 +5,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -179,12 +178,56 @@ class FfmpegMuxerSkipBehaviorTest {
     }
 
     @Test
-    @Disabled("Transcript-only path not yet implemented — M4 will satisfy AC-13.5 for transcripts")
     @DisplayName("AC-13.5: Transcript-only with throwing factory → success (ffmpeg never invoked)")
     void download_transcriptOnly_withThrowingFactory_succeedsWithoutInvokingFactory() {
-        // Placeholder — transcript-only download is not yet implemented.
-        // When M4 lands, this test should construct a transcript-only DownloadRequest
-        // and verify the throwing factory is never called.
+        String timedtextXml = """
+                <?xml version="1.0" encoding="utf-8"?>
+                <transcript>
+                  <text start="0.5" dur="2.0">Hello world</text>
+                </transcript>
+                """;
+
+        OkHttpClient innerTubeHttp = new OkHttpClient.Builder()
+                .addInterceptor(chain -> new Response.Builder()
+                        .request(chain.request())
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(200)
+                        .message("OK")
+                        .body(ResponseBody.create(loadFixture("/fixtures/innertube-response-happy.json"), JSON))
+                        .build())
+                .build();
+
+        OkHttpClient captionHttp = new OkHttpClient.Builder()
+                .addInterceptor(chain -> new Response.Builder()
+                        .request(chain.request())
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(200)
+                        .message("OK")
+                        .body(ResponseBody.create(timedtextXml, MediaType.get("text/xml")))
+                        .build())
+                .build();
+
+        YoutubeDownloader sut = new YoutubeDownloader(
+                new UrlParser(),
+                new InnerTubeClient(innerTubeHttp),
+                new FormatSelector(),
+                StreamDownloader.create(),
+                THROWING_FACTORY,
+                new CaptionDownloader(captionHttp),
+                ThumbnailDownloader.create());
+
+        DownloadRequest request = new DownloadRequest(
+                VALID_URL, false, AudioFormat.M4A, 1080, Optional.empty(),
+                true, Optional.empty(), false,
+                new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
+                ProgressListener.NO_OP, false, false);
+
+        DownloadResult result = sut.download(request);
+
+        assertThat(result.srtPath()).isPresent();
+        assertThat(result.txtPath()).isPresent();
+        assertThat(result.videoPath()).isEmpty();
+        assertThat(result.audioPath()).isEmpty();
     }
 
     // ── Fixture loader ───────────────────────────────────────────────

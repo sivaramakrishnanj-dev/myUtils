@@ -159,6 +159,10 @@ public final class YoutubeDownloader {
         LOGGER.info("Metadata resolved: videoId={} title={}",
                 videoId.value(), player.videoDetails().title());
 
+        if (request.transcript() && !request.audioOnly()) {
+            return downloadTranscriptOnly(request, videoId, player);
+        }
+
         if (request.audioOnly()) {
             return downloadAudioOnly(request, videoId, player);
         }
@@ -222,6 +226,69 @@ public final class YoutubeDownloader {
                 transcript.txtPath(),
                 thumbnailPath,
                 transcript.usedAsrFallback()
+        );
+    }
+
+    /**
+     * Flow C — transcript-only (no media download, no ffmpeg). AC-13.5, state-machine Flow C.
+     *
+     * <p>Invoked when {@code --transcript} is set without {@code --audio-only}.
+     * Produces only .srt + .txt (and optionally .jpg thumbnail).
+     */
+    private DownloadResult downloadTranscriptOnly(DownloadRequest request,
+                                                  VideoId videoId,
+                                                  PlayerResponse player) {
+        LOGGER.info("Flow C: transcript-only (no media download)");
+
+        Optional<LanguageCode> requestedLang = request.lang().map(LanguageCode::of);
+        Optional<LanguageCode> audioLanguage = player.videoDetails().audioLanguage();
+
+        // AC-6.4: selectCaption throws CaptionUnavailableException if no tracks — propagates
+        CaptionSelection captionSelection = formatSelector.selectCaption(
+                player.captionTracks(), requestedLang, audioLanguage, request.noAsr());
+
+        String xml;
+        try {
+            xml = captionDownloader.download(captionSelection.track().baseUrl());
+        } catch (NetworkException e) {
+            // In Flow C, transcript IS the primary output — failure is not partial success
+            throw new NetworkException(
+                    "Caption download failed: " + e.getMessage(), e);
+        }
+
+        List<CaptionCue> cues = CaptionConverter.parseXml(xml);
+        String srtContent = CaptionConverter.toSrt(cues);
+        String txtContent = CaptionConverter.toTxt(cues);
+
+        // Derive output paths from video title (no media file to base on)
+        OutputWriter outputWriter = new OutputWriter(request.output());
+        Path basePath = outputWriter.deriveOutputPath(player.videoDetails(), "srt");
+        Path srtPath = basePath;
+        Path txtPath = basePath.resolveSibling(
+                stripExtension(basePath).getFileName() + ".txt");
+
+        try {
+            Files.writeString(srtPath, srtContent);
+            LOGGER.info("SRT written to: {}", srtPath);
+            Files.writeString(txtPath, txtContent);
+            LOGGER.info("TXT written to: {}", txtPath);
+        } catch (IOException e) {
+            throw new FilesystemException(
+                    "Failed to write transcript files: " + e.getMessage(), e);
+        }
+
+        // Optional thumbnail (still part of Flow C per state-machine)
+        Optional<Path> thumbnailPath = handleThumbnail(request, player, srtPath);
+
+        return new DownloadResult(
+                videoId,
+                player.videoDetails().title(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.of(srtPath),
+                Optional.of(txtPath),
+                thumbnailPath,
+                captionSelection.usedAsrFallback()
         );
     }
 

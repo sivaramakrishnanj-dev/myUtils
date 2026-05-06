@@ -250,16 +250,15 @@ class YoutubeDownloaderTranscriptBehaviorTest {
         }
     }
 
-    // ── 8. Flow A + transcript → .mp4 + .srt + .txt ────────────────
+    // ── 8. Flow C: transcript-only (no media) — state-machine Flow C ──
 
     @Nested
-    @DisplayName("Flow A + transcript")
-    class FlowAWithTranscript {
+    @DisplayName("Flow C — transcript-only (no media)")
+    class FlowCTranscriptOnly {
 
         @Test
-        @DisplayName("Flow A (video+audio+mux) + --transcript → .mp4 + .srt + .txt")
-        void download_flowAWithTranscript_mp4PlusSrtTxt() throws IOException {
-            Path fakeFfmpeg = createFakeFfmpeg();
+        @DisplayName("--transcript without --audio-only → Flow C: .srt + .txt only, no .mp4")
+        void download_transcriptOnly_srtTxtNoMedia() {
             String fixture = loadFixture("/fixtures/innertube-response-happy.json");
 
             YoutubeDownloader sut = new YoutubeDownloader(
@@ -267,7 +266,7 @@ class YoutubeDownloaderTranscriptBehaviorTest {
                     new InnerTubeClient(fakeInnerTubeHttp(fixture)),
                     new FormatSelector(),
                     new StreamDownloader(fakeStreamHttp),
-                    req -> new FfmpegMuxer(fakeFfmpeg.toString()),
+                    req -> req.ffmpegLocation().map(FfmpegMuxer::new).orElseGet(FfmpegMuxer::new),
                     new CaptionDownloader(captionHttp(TIMEDTEXT_XML)),
                     ThumbnailDownloader.create());
 
@@ -278,8 +277,8 @@ class YoutubeDownloaderTranscriptBehaviorTest {
 
             DownloadResult result = sut.download(request);
 
-            assertThat(result.videoPath()).isPresent();
-            assertThat(result.videoPath().get().toString()).endsWith(".mp4");
+            assertThat(result.videoPath()).isEmpty();
+            assertThat(result.audioPath()).isEmpty();
             assertThat(result.srtPath()).isPresent();
             assertThat(result.txtPath()).isPresent();
         }
