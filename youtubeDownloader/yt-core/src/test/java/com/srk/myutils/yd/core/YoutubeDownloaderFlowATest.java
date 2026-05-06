@@ -63,6 +63,7 @@ class YoutubeDownloaderFlowATest {
                 false,
                 output,
                 ProgressListener.NO_OP,
+                false,
                 false);
 
         DownloadResult result = sut.download(request);

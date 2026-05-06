@@ -121,6 +121,7 @@ public final class YoutubeDownloader {
                 false,
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 listener,
+                false,
                 false));
     }
 

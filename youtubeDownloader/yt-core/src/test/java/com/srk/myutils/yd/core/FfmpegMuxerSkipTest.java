@@ -77,6 +77,7 @@ class FfmpegMuxerSkipTest {
                 false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                 ProgressListener.NO_OP,
+                false,
                 false);
 
         DownloadResult result = sut.download(request);

@@ -107,6 +107,7 @@ class CliFfmpegLocationBehaviorTest {
                 false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 ProgressListener.NO_OP,
+                false,
                 false);
 
         assertThat(request.ffmpegLocation()).isPresent()

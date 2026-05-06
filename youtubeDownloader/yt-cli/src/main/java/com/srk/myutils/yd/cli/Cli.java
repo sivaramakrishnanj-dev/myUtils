@@ -82,6 +82,9 @@ public final class Cli implements Callable<Integer> {
     @Option(names = "--no-asr", description = "Refuse ASR fallback for captions (AC-7.4)")
     private boolean noAsr;
 
+    @Option(names = "--thumbnail", description = "Download the video thumbnail")
+    private boolean thumbnail;
+
     /** Default constructor — uses production {@link YoutubeDownloader}. */
     public Cli() {
         this(YoutubeDownloader.create());
@@ -118,7 +121,8 @@ public final class Cli implements Callable<Integer> {
                             Optional.ofNullable(outputDir),
                             force),
                     listener,
-                    debug);
+                    debug,
+                    thumbnail);
             DownloadResult result = downloader.download(request);
             LOGGER.info("Downloaded: videoId={} title={}",
                     result.videoId().value(), result.title());

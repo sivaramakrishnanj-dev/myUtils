@@ -22,6 +22,7 @@ import java.util.Optional;
  * @param output           output file placement and overwrite config
  * @param listener         progress callback; use {@link ProgressListener#NO_OP} to suppress
  * @param debug            {@code true} to enable debug logging and ffmpeg verbose output (AC-5.4)
+ * @param thumbnail        {@code true} to download the video thumbnail
  */
 public record DownloadRequest(
         String url,
@@ -34,7 +35,8 @@ public record DownloadRequest(
         boolean noAsr,
         OutputConfig output,
         ProgressListener listener,
-        boolean debug
+        boolean debug,
+        boolean thumbnail
 ) {
 
     /** Default maximum video height per AC-1.3: 1080p unless overridden. */
@@ -50,6 +52,6 @@ public record DownloadRequest(
     /** Convenience: audio-only request with default output config and no progress. */
     public static DownloadRequest audioOnly(String url, OutputConfig output) {
         return new DownloadRequest(url, true, AudioFormat.M4A, 0, Optional.empty(),
-                false, Optional.empty(), false, output, ProgressListener.NO_OP, false);
+                false, Optional.empty(), false, output, ProgressListener.NO_OP, false, false);
     }
 }
