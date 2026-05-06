@@ -135,7 +135,7 @@ public final class DownloadContext implements AutoCloseable {
                 try {
                     Files.delete(p);
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new FilesystemException(p + ": failed to delete", e);
                 }
             });
         }
