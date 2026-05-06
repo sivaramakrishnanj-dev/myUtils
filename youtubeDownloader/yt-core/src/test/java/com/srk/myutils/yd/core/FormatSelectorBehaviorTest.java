@@ -419,4 +419,179 @@ class FormatSelectorBehaviorTest {
             assertThat(FormatSelector.containerRank("audio/ogg; codecs=\"vorbis\"")).isEqualTo(-1);
         }
     }
+
+    // ── Portrait video (YouTube Shorts) — qualityHeight fix ────────
+
+    @Nested
+    @DisplayName("Portrait video (YouTube Shorts): qualityHeight uses min(w,h)")
+    class PortraitVideo {
+
+        private static Format portraitVideo(int itag, String codec, int width, int height, long bitrate) {
+            String container = codec.startsWith("vp") ? "video/webm" : "video/mp4";
+            return new Format(itag,
+                    container + "; codecs=\"" + codec + "\"",
+                    bitrate,
+                    OptionalInt.of(width),
+                    OptionalInt.of(height),
+                    OptionalInt.of(30),
+                    OptionalInt.empty(),
+                    Optional.of(10_000_000L),
+                    "https://cdn.example.com/v" + itag,
+                    "");
+        }
+
+        @Test
+        @DisplayName("maxHeight=1080 with portrait 1080x1920 H.264 picks H.264 over VP9 608x1080")
+        void select_givenPortrait1080p_prefersH264OverVp9() {
+            Format h264Portrait = portraitVideo(137, "avc1.640028", 1080, 1920, 4_500_000);
+            Format vp9Portrait = portraitVideo(779, "vp9", 608, 1080, 2_000_000);
+            Format audio = audioM4a(140, 130_000);
+
+            FormatSelection result = selector.select(List.of(h264Portrait, vp9Portrait, audio), 1080);
+
+            assertThat(result.video().itag()).isEqualTo(137);
+        }
+
+        @Test
+        @DisplayName("maxHeight=720 rejects portrait formats with qualityHeight > 720")
+        void select_givenMaxHeight720_rejectsPortrait1080p() {
+            Format h264Portrait = portraitVideo(137, "avc1.640028", 1080, 1920, 4_500_000);
+            Format vp9Portrait = portraitVideo(779, "vp9", 1080, 1920, 2_000_000);
+            Format audio = audioM4a(140, 130_000);
+
+            assertThatThrownBy(() -> selector.select(List.of(h264Portrait, vp9Portrait, audio), 720))
+                    .isInstanceOf(NoMatchingFormatException.class);
+        }
+
+        @Test
+        @DisplayName("Portrait with only VP9 at 1080p: selector picks VP9 when no H.264 available")
+        void select_givenPortraitOnlyVp9_picksVp9() {
+            Format vp9Portrait = portraitVideo(779, "vp9", 1080, 1920, 4_000_000);
+            Format audio = audioM4a(140, 130_000);
+
+            FormatSelection result = selector.select(List.of(vp9Portrait, audio), 1080);
+
+            assertThat(result.video().itag()).isEqualTo(779);
+        }
+
+        @Test
+        @DisplayName("Landscape 1920x1080 H.264: existing behavior preserved, H.264 picked")
+        void select_givenLandscape1080p_picksH264() {
+            Format h264Landscape = portraitVideo(137, "avc1.640028", 1920, 1080, 4_500_000);
+            Format vp9Landscape = portraitVideo(248, "vp9", 1920, 1080, 4_500_000);
+            Format audio = audioM4a(140, 130_000);
+
+            FormatSelection result = selector.select(List.of(h264Landscape, vp9Landscape, audio), 1080);
+
+            assertThat(result.video().itag()).isEqualTo(137);
+        }
+
+        @Test
+        @DisplayName("Square 720x720: treated as 720p, passes maxHeight=720")
+        void select_givenSquare720_passesMaxHeight720() {
+            Format square = portraitVideo(136, "avc1.4d401f", 720, 720, 2_500_000);
+            Format audio = audioM4a(140, 130_000);
+
+            FormatSelection result = selector.select(List.of(square, audio), 720);
+
+            assertThat(result.video().itag()).isEqualTo(136);
+        }
+
+        @Test
+        @DisplayName("Portrait at maxHeight=480: selects 480p-tier format (qualityHeight=480)")
+        void select_givenPortraitMaxHeight480_picks480pTier() {
+            Format portrait1080 = portraitVideo(137, "avc1.640028", 1080, 1920, 4_500_000);
+            Format portrait480 = portraitVideo(135, "avc1.4d4015", 480, 854, 1_000_000);
+            Format audio = audioM4a(140, 130_000);
+
+            FormatSelection result = selector.select(List.of(portrait1080, portrait480, audio), 480);
+
+            assertThat(result.video().itag()).isEqualTo(135);
+        }
+
+        @Test
+        @DisplayName("Portrait at maxHeight=0 (uncapped): picks highest qualityHeight H.264")
+        void select_givenPortraitMaxHeightZero_picksHighestQualityH264() {
+            Format portrait1080 = portraitVideo(137, "avc1.640028", 1080, 1920, 4_500_000);
+            Format portrait720 = portraitVideo(136, "avc1.4d401f", 720, 1280, 2_500_000);
+            Format audio = audioM4a(140, 130_000);
+
+            FormatSelection result = selector.select(List.of(portrait1080, portrait720, audio), 0);
+
+            assertThat(result.video().itag()).isEqualTo(137);
+        }
+    }
+
+    // ── qualityHeight helper ────────────────────────────────────────
+
+    @Nested
+    @DisplayName("qualityHeight: returns min(width, height)")
+    class QualityHeight {
+
+        @Test
+        @DisplayName("Landscape 1920x1080 → qualityHeight = 1080")
+        void qualityHeight_landscape_returnsHeight() {
+            Format f = new Format(137, "video/mp4; codecs=\"avc1.640028\"", 4_500_000,
+                    OptionalInt.of(1920), OptionalInt.of(1080), OptionalInt.of(30),
+                    OptionalInt.empty(), Optional.of(10_000_000L),
+                    "https://cdn.example.com/v137", "");
+
+            assertThat(FormatSelector.qualityHeight(f)).isEqualTo(1080);
+        }
+
+        @Test
+        @DisplayName("Portrait 1080x1920 → qualityHeight = 1080")
+        void qualityHeight_portrait_returnsWidth() {
+            Format f = new Format(137, "video/mp4; codecs=\"avc1.640028\"", 4_500_000,
+                    OptionalInt.of(1080), OptionalInt.of(1920), OptionalInt.of(30),
+                    OptionalInt.empty(), Optional.of(10_000_000L),
+                    "https://cdn.example.com/v137", "");
+
+            assertThat(FormatSelector.qualityHeight(f)).isEqualTo(1080);
+        }
+
+        @Test
+        @DisplayName("Square 720x720 → qualityHeight = 720")
+        void qualityHeight_square_returnsDimension() {
+            Format f = new Format(136, "video/mp4; codecs=\"avc1.4d401f\"", 2_500_000,
+                    OptionalInt.of(720), OptionalInt.of(720), OptionalInt.of(30),
+                    OptionalInt.empty(), Optional.of(5_000_000L),
+                    "https://cdn.example.com/v136", "");
+
+            assertThat(FormatSelector.qualityHeight(f)).isEqualTo(720);
+        }
+
+        @Test
+        @DisplayName("Absent width, height=1080 → qualityHeight = min(MAX_VALUE, 1080) = 1080")
+        void qualityHeight_absentWidth_returnsHeight() {
+            Format f = new Format(137, "video/mp4; codecs=\"avc1.640028\"", 4_500_000,
+                    OptionalInt.empty(), OptionalInt.of(1080), OptionalInt.of(30),
+                    OptionalInt.empty(), Optional.of(10_000_000L),
+                    "https://cdn.example.com/v137", "");
+
+            assertThat(FormatSelector.qualityHeight(f)).isEqualTo(1080);
+        }
+
+        @Test
+        @DisplayName("Absent height, width=1920 → qualityHeight = min(1920, MAX_VALUE) = 1920")
+        void qualityHeight_absentHeight_returnsWidth() {
+            Format f = new Format(137, "video/mp4; codecs=\"avc1.640028\"", 4_500_000,
+                    OptionalInt.of(1920), OptionalInt.empty(), OptionalInt.of(30),
+                    OptionalInt.empty(), Optional.of(10_000_000L),
+                    "https://cdn.example.com/v137", "");
+
+            assertThat(FormatSelector.qualityHeight(f)).isEqualTo(1920);
+        }
+
+        @Test
+        @DisplayName("Both absent → qualityHeight = MAX_VALUE (excluded by any capped filter)")
+        void qualityHeight_bothAbsent_returnsMaxValue() {
+            Format f = new Format(137, "video/mp4; codecs=\"avc1.640028\"", 4_500_000,
+                    OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(30),
+                    OptionalInt.empty(), Optional.of(10_000_000L),
+                    "https://cdn.example.com/v137", "");
+
+            assertThat(FormatSelector.qualityHeight(f)).isEqualTo(Integer.MAX_VALUE);
+        }
+    }
 }

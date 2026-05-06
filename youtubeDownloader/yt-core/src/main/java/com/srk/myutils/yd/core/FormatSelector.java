@@ -162,7 +162,7 @@ public final class FormatSelector {
         return formats.stream()
                 .filter(Format::isVideo)
                 .filter(f -> !f.hasCipher())
-                .filter(f -> maxHeight == 0 || f.height().orElse(0) <= maxHeight)
+                .filter(f -> maxHeight == 0 || qualityHeight(f) <= maxHeight)
                 .max(videoComparator())
                 .orElseThrow(() -> {
                     if (allCipher(formats, true)) {
@@ -206,7 +206,7 @@ public final class FormatSelector {
      * Used with {@code .max()} so higher values win.
      */
     private static Comparator<Format> videoComparator() {
-        return Comparator.comparingInt((Format f) -> f.height().orElse(0))
+        return Comparator.comparingInt(FormatSelector::qualityHeight)
                 .thenComparingInt(f -> codecRank(f.mimeType()))
                 .thenComparingLong(Format::bitrate);
     }
@@ -218,6 +218,18 @@ public final class FormatSelector {
     private static Comparator<Format> audioComparator() {
         return Comparator.comparingInt((Format f) -> containerRank(f.mimeType()))
                 .thenComparingLong(Format::bitrate);
+    }
+
+    /**
+     * Returns the "quality height" of a video format — the shorter dimension.
+     * For landscape (16:9, 4:3): this is the literal height (720, 1080, ...).
+     * For portrait YouTube Shorts (9:16): width is the shorter dimension.
+     * This matches YouTube's qualityLabel semantics (1080p = shorter dimension is 1080).
+     */
+    static int qualityHeight(Format f) {
+        int w = f.width().orElse(Integer.MAX_VALUE);
+        int h = f.height().orElse(Integer.MAX_VALUE);
+        return Math.min(w, h);
     }
 
     /**
