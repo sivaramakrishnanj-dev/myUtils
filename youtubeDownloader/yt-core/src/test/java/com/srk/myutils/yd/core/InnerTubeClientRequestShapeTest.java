@@ -171,14 +171,17 @@ class InnerTubeClientRequestShapeTest {
         }
 
         @Test
-        @DisplayName("body matches fixture innertube-request-happy.json shape")
+        @DisplayName("body matches fixture innertube-request-happy.json shape (ignoring x-captured-on metadata)")
         void fetchPlayer_bodyMatchesFixtureShape() throws Exception {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
             JsonNode actual = MAPPER.readTree(capturedBody);
             JsonNode expected = MAPPER.readTree(getClass().getResourceAsStream(
                     "/fixtures/innertube-request-happy.json"));
-            assertThat(actual).isEqualTo(expected);
+            // x-captured-on is fixture provenance metadata (T-5.5), not part of the request shape
+            assertThat(actual.get("videoId")).isEqualTo(expected.get("videoId"));
+            assertThat(actual.get("context")).isEqualTo(expected.get("context"));
+            assertThat(actual.size()).as("top-level key count matches request shape").isEqualTo(2);
         }
 
         @Test
