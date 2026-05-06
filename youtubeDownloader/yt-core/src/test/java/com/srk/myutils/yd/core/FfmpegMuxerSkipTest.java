@@ -72,6 +72,9 @@ class FfmpegMuxerSkipTest {
                 AudioFormat.M4A,
                 0,
                 Optional.of("/nonexistent/ffmpeg"),
+                false,
+                Optional.empty(),
+                false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                 ProgressListener.NO_OP,
                 false);

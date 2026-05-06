@@ -73,6 +73,15 @@ public final class Cli implements Callable<Integer> {
     @Option(names = "--force", description = "Overwrite existing output files")
     private boolean force;
 
+    @Option(names = "--transcript", description = "Enable transcript download (AC-6.1)")
+    private boolean transcript;
+
+    @Option(names = "--lang", description = "Caption language code (AC-8.2)")
+    private String lang;
+
+    @Option(names = "--no-asr", description = "Refuse ASR fallback for captions (AC-7.4)")
+    private boolean noAsr;
+
     /** Default constructor — uses production {@link YoutubeDownloader}. */
     public Cli() {
         this(YoutubeDownloader.create());
@@ -101,6 +110,9 @@ public final class Cli implements Callable<Integer> {
                     audioFormat,
                     maxHeight,
                     Optional.ofNullable(ffmpegLocation),
+                    transcript,
+                    Optional.ofNullable(lang),
+                    noAsr,
                     new OutputConfig(
                             Optional.ofNullable(outputPath),
                             Optional.ofNullable(outputDir),

@@ -176,6 +176,7 @@ class YoutubeDownloaderFlowABehaviorTest {
         return new DownloadRequest(
                 VALID_URL, false, AudioFormat.M4A, 1080,
                 Optional.of(fakeFfmpegScript.toString()),
+                false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                 ProgressListener.NO_OP, debug);
     }
@@ -247,6 +248,7 @@ class YoutubeDownloaderFlowABehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, false, AudioFormat.M4A, 1,
                     Optional.of(fakeFfmpegScript.toString()),
+                    false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     ProgressListener.NO_OP, false);
 
@@ -287,6 +289,7 @@ class YoutubeDownloaderFlowABehaviorTest {
             assertThatThrownBy(() -> dl.download(new DownloadRequest(
                     VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(badFfmpeg.toString()),
+                    false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     ProgressListener.NO_OP, false)))
                     .isInstanceOf(FfmpegException.class)
@@ -371,6 +374,7 @@ class YoutubeDownloaderFlowABehaviorTest {
             assertThatThrownBy(() -> dl.download(new DownloadRequest(
                     VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(failMuxFfmpeg.toString()),
+                    false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     ProgressListener.NO_OP, false)))
                     .isInstanceOf(FfmpegException.class)
@@ -480,6 +484,7 @@ class YoutubeDownloaderFlowABehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(fakeFfmpegScript.toString()),
+                    false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     capturing, false);
 
@@ -577,6 +582,7 @@ class YoutubeDownloaderFlowABehaviorTest {
             assertThatThrownBy(() -> dl.download(new DownloadRequest(
                     VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(failMux.toString()),
+                    false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     ProgressListener.NO_OP, false)))
                     .isInstanceOf(FfmpegException.class);
@@ -604,6 +610,7 @@ class YoutubeDownloaderFlowABehaviorTest {
             DownloadResult result = dl.download(new DownloadRequest(
                     VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(fakeFfmpegScript.toString()),
+                    false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                     ProgressListener.NO_OP, false));
 
@@ -633,6 +640,7 @@ class YoutubeDownloaderFlowABehaviorTest {
             DownloadRequest request = new DownloadRequest(
                     VALID_URL, false, AudioFormat.M4A, 1080,
                     Optional.of(fakeFfmpegScript.toString()),
+                    false, Optional.empty(), false,
                     new OutputConfig(Optional.empty(), Optional.of(tempDir), true),
                     ProgressListener.NO_OP, false);
 

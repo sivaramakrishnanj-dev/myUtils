@@ -78,6 +78,7 @@ class FfmpegMuxerSkipBehaviorTest {
     private DownloadRequest m4aRequest(Optional<String> ffmpegLocation) {
         return new DownloadRequest(
                 VALID_URL, true, AudioFormat.M4A, 0, ffmpegLocation,
+                false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                 ProgressListener.NO_OP, false);
     }
@@ -85,6 +86,7 @@ class FfmpegMuxerSkipBehaviorTest {
     private DownloadRequest mp3Request() {
         return new DownloadRequest(
                 VALID_URL, true, AudioFormat.MP3, 0, Optional.empty(),
+                false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                 ProgressListener.NO_OP, false);
     }
@@ -92,6 +94,7 @@ class FfmpegMuxerSkipBehaviorTest {
     private DownloadRequest videoAudioRequest() {
         return new DownloadRequest(
                 VALID_URL, false, AudioFormat.M4A, 1080, Optional.empty(),
+                false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                 ProgressListener.NO_OP, false);
     }

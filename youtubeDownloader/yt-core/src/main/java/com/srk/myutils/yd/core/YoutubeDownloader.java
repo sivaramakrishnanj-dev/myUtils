@@ -116,6 +116,9 @@ public final class YoutubeDownloader {
                 AudioFormat.M4A,
                 DownloadRequest.DEFAULT_MAX_HEIGHT,
                 Optional.empty(),
+                false,
+                Optional.empty(),
+                false,
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 listener,
                 false));

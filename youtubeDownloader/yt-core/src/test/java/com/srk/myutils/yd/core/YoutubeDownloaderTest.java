@@ -67,6 +67,7 @@ class YoutubeDownloaderTest {
         DownloadRequest request = new DownloadRequest(
                 "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 true, AudioFormat.M4A, 0, Optional.empty(),
+                false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.of(tempDir), false),
                 ProgressListener.NO_OP, false);
 

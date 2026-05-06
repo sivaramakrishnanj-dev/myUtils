@@ -58,6 +58,9 @@ class YoutubeDownloaderFlowATest {
                 AudioFormat.M4A,
                 1080,
                 Optional.of(fakeFfmpegPath()),
+                false,
+                Optional.empty(),
+                false,
                 output,
                 ProgressListener.NO_OP,
                 false);

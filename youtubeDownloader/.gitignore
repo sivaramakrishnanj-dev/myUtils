@@ -7,3 +7,13 @@ target/
 .obsidian/
 dependency-reduced-pom.xml
 .jqwik-database
+
+# Downloaded media / transcript artifacts (test runs, manual invocations)
+*.mp4
+*.m4a
+*.mp3
+*.webm
+*.srt
+*.txt
+*.jpg
+*.part

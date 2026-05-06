@@ -78,6 +78,9 @@ class YoutubeDownloaderAudioOnlyTest {
                 AudioFormat.M4A,
                 0,
                 Optional.empty(),
+                false,
+                Optional.empty(),
+                false,
                 output,
                 ProgressListener.NO_OP,
                 false);

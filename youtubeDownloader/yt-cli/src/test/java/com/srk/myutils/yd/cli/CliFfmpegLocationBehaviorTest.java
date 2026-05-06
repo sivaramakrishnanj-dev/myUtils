@@ -104,6 +104,7 @@ class CliFfmpegLocationBehaviorTest {
         DownloadRequest request = new DownloadRequest(
                 VALID_URL, false, AudioFormat.M4A, 1080,
                 Optional.of("/custom/ffmpeg"),
+                false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 ProgressListener.NO_OP,
                 false);

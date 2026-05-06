@@ -52,6 +52,7 @@ class YoutubeDownloaderBehaviorTest {
      */
     private static DownloadRequest metadataOnlyRequest(String url, Path outputDir) {
         return new DownloadRequest(url, true, AudioFormat.M4A, 0, Optional.empty(),
+                false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.of(outputDir), false),
                 ProgressListener.NO_OP, false);
     }
@@ -61,6 +62,7 @@ class YoutubeDownloaderBehaviorTest {
      */
     private static DownloadRequest metadataOnlyRequest(String url) {
         return new DownloadRequest(url, true, AudioFormat.M4A, 0, Optional.empty(),
+                false, Optional.empty(), false,
                 new OutputConfig(Optional.empty(), Optional.empty(), false),
                 ProgressListener.NO_OP, false);
     }
