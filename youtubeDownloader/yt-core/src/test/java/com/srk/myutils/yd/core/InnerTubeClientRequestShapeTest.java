@@ -86,23 +86,23 @@ class InnerTubeClientRequestShapeTest {
         }
 
         @Test
-        @DisplayName("context.client.clientVersion == 19.09.37 (NFR-ANDROID-CLIENT-VERSION)")
+        @DisplayName("context.client.clientVersion == 21.02.35 (NFR-ANDROID-CLIENT-VERSION)")
         void fetchPlayer_bodyHasClientVersion() throws Exception {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
             JsonNode clientNode = MAPPER.readTree(capturedBody).path("context").path("client");
-            assertThat(clientNode.get("clientVersion").asText()).isEqualTo("19.09.37");
+            assertThat(clientNode.get("clientVersion").asText()).isEqualTo("21.02.35");
         }
 
         @Test
-        @DisplayName("androidSdkVersion == 34 as integer, not string (NFR-ANDROID-SDK-VERSION, CT-REQ-N7)")
+        @DisplayName("androidSdkVersion == 30 as integer, not string (NFR-ANDROID-SDK-VERSION, CT-REQ-N7)")
         void fetchPlayer_bodyHasAndroidSdkVersionAsInteger() throws Exception {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
             JsonNode sdkNode = MAPPER.readTree(capturedBody)
                     .path("context").path("client").path("androidSdkVersion");
             assertThat(sdkNode.isInt()).as("androidSdkVersion must be an integer, not a string").isTrue();
-            assertThat(sdkNode.asInt()).isEqualTo(34);
+            assertThat(sdkNode.asInt()).isEqualTo(30);
         }
 
         @Test
@@ -133,12 +133,12 @@ class InnerTubeClientRequestShapeTest {
         }
 
         @Test
-        @DisplayName("osVersion == 14")
+        @DisplayName("osVersion == 11")
         void fetchPlayer_bodyHasOsVersion() throws Exception {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
             JsonNode clientNode = MAPPER.readTree(capturedBody).path("context").path("client");
-            assertThat(clientNode.get("osVersion").asText()).isEqualTo("14");
+            assertThat(clientNode.get("osVersion").asText()).isEqualTo("11");
         }
 
         @Test
@@ -206,7 +206,7 @@ class InnerTubeClientRequestShapeTest {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
             assertThat(capturedRequests.get(0).header("User-Agent"))
-                    .isEqualTo("com.google.android.youtube/19.09.37 (Linux; U; Android 14) gzip");
+                    .isEqualTo("com.google.android.youtube/21.02.35 (Linux; U; Android 11) gzip");
         }
 
         @Test
@@ -227,11 +227,11 @@ class InnerTubeClientRequestShapeTest {
         }
 
         @Test
-        @DisplayName("X-YouTube-Client-Version == 19.09.37")
+        @DisplayName("X-YouTube-Client-Version == 21.02.35")
         void fetchPlayer_clientVersionHeader() {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
-            assertThat(capturedRequests.get(0).header("X-YouTube-Client-Version")).isEqualTo("19.09.37");
+            assertThat(capturedRequests.get(0).header("X-YouTube-Client-Version")).isEqualTo("21.02.35");
         }
 
         @Test

@@ -45,17 +45,16 @@ public final class InnerTubeClient {
 
     // AC-12.1 / NFR-ANDROID-* constants
     private static final String CLIENT_NAME = "ANDROID";
-    private static final String CLIENT_VERSION = "19.09.37";       // NFR-ANDROID-CLIENT-VERSION
-    private static final int ANDROID_SDK_VERSION = 34;             // NFR-ANDROID-SDK-VERSION
+    private static final String CLIENT_VERSION = "21.02.35";       // NFR-ANDROID-CLIENT-VERSION
+    private static final int ANDROID_SDK_VERSION = 30;             // NFR-ANDROID-SDK-VERSION
     private static final String HL = "en";                         // NFR-INNERTUBE-HL
     private static final String GL = "US";                         // NFR-INNERTUBE-GL
     private static final String OS_NAME = "Android";
-    private static final String OS_VERSION = "14";
+    private static final String OS_VERSION = "11";
     private static final String PLATFORM = "MOBILE";
 
     // AC-12.2 / NFR-ANDROID-USER-AGENT
-    private static final String USER_AGENT =
-            "com.google.android.youtube/19.09.37 (Linux; U; Android 14) gzip";
+    private static final String USER_AGENT = HttpConstants.ANDROID_USER_AGENT;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 

@@ -62,9 +62,9 @@ class InnerTubeClientTest {
 
         // Assert request headers (AC-12.2, 04-apis.md § 1.1.1)
         assertThat(captured[0].header("User-Agent"))
-                .isEqualTo("com.google.android.youtube/19.09.37 (Linux; U; Android 14) gzip");
+                .isEqualTo("com.google.android.youtube/21.02.35 (Linux; U; Android 11) gzip");
         assertThat(captured[0].header("X-YouTube-Client-Name")).isEqualTo("3");
-        assertThat(captured[0].header("X-YouTube-Client-Version")).isEqualTo("19.09.37");
+        assertThat(captured[0].header("X-YouTube-Client-Version")).isEqualTo("21.02.35");
 
         // Assert request body matches schema (AC-12.1)
         JsonNode body = MAPPER.readTree(capturedBody[0]);
@@ -72,12 +72,12 @@ class InnerTubeClientTest {
 
         JsonNode clientNode = body.get("context").get("client");
         assertThat(clientNode.get("clientName").asText()).isEqualTo("ANDROID");
-        assertThat(clientNode.get("clientVersion").asText()).isEqualTo("19.09.37");
-        assertThat(clientNode.get("androidSdkVersion").asInt()).isEqualTo(34);
+        assertThat(clientNode.get("clientVersion").asText()).isEqualTo("21.02.35");
+        assertThat(clientNode.get("androidSdkVersion").asInt()).isEqualTo(30);
         assertThat(clientNode.get("hl").asText()).isEqualTo("en");
         assertThat(clientNode.get("gl").asText()).isEqualTo("US");
         assertThat(clientNode.get("osName").asText()).isEqualTo("Android");
-        assertThat(clientNode.get("osVersion").asText()).isEqualTo("14");
+        assertThat(clientNode.get("osVersion").asText()).isEqualTo("11");
         assertThat(clientNode.get("platform").asText()).isEqualTo("MOBILE");
     }
 }

@@ -130,7 +130,7 @@ class CaptionDownloaderBehaviorTest {
         sut.download(TIMEDTEXT_URL);
 
         assertThat(capturedUa.get())
-                .isEqualTo("com.google.android.youtube/19.09.37 (Linux; U; Android 14) gzip");
+                .isEqualTo("com.google.android.youtube/21.02.35 (Linux; U; Android 11) gzip");
     }
 
     // ── URL pass-through ─────────────────────────────────────────────

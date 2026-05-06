@@ -47,8 +47,7 @@ public final class StreamDownloader {
     private static final int BUFFER_SIZE = 64 * 1024;
 
     /** Same User-Agent as InnerTube requests (04-apis.md § 1.2.1). */
-    private static final String USER_AGENT =
-            "com.google.android.youtube/19.09.37 (Linux; U; Android 14) gzip";
+    private static final String USER_AGENT = HttpConstants.ANDROID_USER_AGENT;
 
     /** NFR-STREAM-MAX-RETRIES = 2 (1 initial + 2 retries = 3 total attempts). */
     static final int MAX_RETRIES = 2;
