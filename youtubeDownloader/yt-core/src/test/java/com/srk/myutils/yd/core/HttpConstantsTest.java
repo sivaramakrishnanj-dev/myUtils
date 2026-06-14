@@ -12,4 +12,18 @@ class HttpConstantsTest {
                 .isNotBlank()
                 .startsWith("com.google.android.youtube/");
     }
+
+    @Test
+    void androidVrUserAgent_isNonBlankAndContainsExpectedAppId() {
+        assertThat(HttpConstants.ANDROID_VR_USER_AGENT)
+                .isNotBlank()
+                .startsWith("com.google.android.apps.youtube.vr.oculus/");
+    }
+
+    @Test
+    void iosUserAgent_isNonBlankAndContainsExpectedAppId() {
+        assertThat(HttpConstants.IOS_USER_AGENT)
+                .isNotBlank()
+                .startsWith("com.google.ios.youtube/");
+    }
 }

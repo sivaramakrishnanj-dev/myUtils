@@ -2,14 +2,14 @@
   "videoId": "dQw4w9WgXcQ",
   "context": {
     "client": {
-      "clientName": "ANDROID",
-      "clientVersion": "21.02.35",
-      "androidSdkVersion": 30,
+      "clientName": "IOS",
+      "clientVersion": "21.02.3",
+      "deviceMake": "Apple",
+      "deviceModel": "iPhone16,2",
+      "osName": "iPhone",
+      "osVersion": "18.3.2.22D82",
       "hl": "en",
-      "gl": "US",
-      "osName": "Android",
-      "osVersion": "11",
-      "platform": "MOBILE"
+      "gl": "US"
     }
   }
 }

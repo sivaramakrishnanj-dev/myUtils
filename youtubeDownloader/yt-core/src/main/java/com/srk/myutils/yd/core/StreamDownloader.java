@@ -173,6 +173,14 @@ public final class StreamDownloader {
      */
     private void doDownload(String url, Path partFile, long existingBytes,
                             ProgressListener callback) {
+        LOGGER.info("Stream download URL: {}", url);
+
+        if (url == null || url.isEmpty()) {
+            throw new NetworkException(
+                    "CDN URL is empty — likely a SABR/PoToken-gated InnerTube response "
+                            + "(adaptiveFormats[].url omitted). Try a different client or use yt-dlp.");
+        }
+
         Request.Builder reqBuilder = new Request.Builder()
                 .url(url)
                 .header("User-Agent", USER_AGENT);

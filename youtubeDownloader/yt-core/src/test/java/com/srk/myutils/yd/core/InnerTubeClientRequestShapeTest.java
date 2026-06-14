@@ -77,32 +77,41 @@ class InnerTubeClientRequestShapeTest {
         }
 
         @Test
-        @DisplayName("context.client.clientName == ANDROID (AC-12.1, ADR-0001)")
+        @DisplayName("context.client.clientName == IOS (AC-12.1, ADR-0001; SABR bypass)")
         void fetchPlayer_bodyHasClientNameAndroid() throws Exception {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
             JsonNode clientNode = MAPPER.readTree(capturedBody).path("context").path("client");
-            assertThat(clientNode.get("clientName").asText()).isEqualTo("ANDROID");
+            assertThat(clientNode.get("clientName").asText()).isEqualTo("IOS");
         }
 
         @Test
-        @DisplayName("context.client.clientVersion == 21.02.35 (NFR-ANDROID-CLIENT-VERSION)")
+        @DisplayName("context.client.clientVersion == 21.02.3 (NFR-ANDROID-CLIENT-VERSION)")
         void fetchPlayer_bodyHasClientVersion() throws Exception {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
             JsonNode clientNode = MAPPER.readTree(capturedBody).path("context").path("client");
-            assertThat(clientNode.get("clientVersion").asText()).isEqualTo("21.02.35");
+            assertThat(clientNode.get("clientVersion").asText()).isEqualTo("21.02.3");
         }
 
         @Test
-        @DisplayName("androidSdkVersion == 30 as integer, not string (NFR-ANDROID-SDK-VERSION, CT-REQ-N7)")
-        void fetchPlayer_bodyHasAndroidSdkVersionAsInteger() throws Exception {
+        @DisplayName("deviceMake/deviceModel identify the iOS device (IOS context)")
+        void fetchPlayer_bodyHasDeviceMakeAndModel() throws Exception {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
-            JsonNode sdkNode = MAPPER.readTree(capturedBody)
-                    .path("context").path("client").path("androidSdkVersion");
-            assertThat(sdkNode.isInt()).as("androidSdkVersion must be an integer, not a string").isTrue();
-            assertThat(sdkNode.asInt()).isEqualTo(30);
+            JsonNode clientNode = MAPPER.readTree(capturedBody).path("context").path("client");
+            assertThat(clientNode.get("deviceMake").asText()).isEqualTo("Apple");
+            assertThat(clientNode.get("deviceModel").asText()).isEqualTo("iPhone16,2");
+        }
+
+        @Test
+        @DisplayName("androidSdkVersion is absent for the IOS client (iOS carries no SDK field)")
+        void fetchPlayer_bodyHasNoAndroidSdkVersion() throws Exception {
+            client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
+
+            JsonNode clientNode = MAPPER.readTree(capturedBody).path("context").path("client");
+            assertThat(clientNode.has("androidSdkVersion"))
+                    .as("IOS client context must not send androidSdkVersion").isFalse();
         }
 
         @Test
@@ -124,30 +133,21 @@ class InnerTubeClientRequestShapeTest {
         }
 
         @Test
-        @DisplayName("osName == Android")
+        @DisplayName("osName == iPhone")
         void fetchPlayer_bodyHasOsName() throws Exception {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
             JsonNode clientNode = MAPPER.readTree(capturedBody).path("context").path("client");
-            assertThat(clientNode.get("osName").asText()).isEqualTo("Android");
+            assertThat(clientNode.get("osName").asText()).isEqualTo("iPhone");
         }
 
         @Test
-        @DisplayName("osVersion == 11")
+        @DisplayName("osVersion == 18.3.2.22D82")
         void fetchPlayer_bodyHasOsVersion() throws Exception {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
             JsonNode clientNode = MAPPER.readTree(capturedBody).path("context").path("client");
-            assertThat(clientNode.get("osVersion").asText()).isEqualTo("11");
-        }
-
-        @Test
-        @DisplayName("platform == MOBILE")
-        void fetchPlayer_bodyHasPlatform() throws Exception {
-            client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
-
-            JsonNode clientNode = MAPPER.readTree(capturedBody).path("context").path("client");
-            assertThat(clientNode.get("platform").asText()).isEqualTo("MOBILE");
+            assertThat(clientNode.get("osVersion").asText()).isEqualTo("18.3.2.22D82");
         }
 
         @Test
@@ -201,12 +201,12 @@ class InnerTubeClientRequestShapeTest {
     class RequestHeaders {
 
         @Test
-        @DisplayName("User-Agent matches NFR-ANDROID-USER-AGENT")
+        @DisplayName("User-Agent matches the IOS client UA")
         void fetchPlayer_userAgentHeader() {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
             assertThat(capturedRequests.get(0).header("User-Agent"))
-                    .isEqualTo("com.google.android.youtube/21.02.35 (Linux; U; Android 11) gzip");
+                    .isEqualTo("com.google.ios.youtube/21.02.3 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)");
         }
 
         @Test
@@ -219,19 +219,19 @@ class InnerTubeClientRequestShapeTest {
         }
 
         @Test
-        @DisplayName("X-YouTube-Client-Name == 3")
+        @DisplayName("X-YouTube-Client-Name == 5 (IOS)")
         void fetchPlayer_clientNameHeader() {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
-            assertThat(capturedRequests.get(0).header("X-YouTube-Client-Name")).isEqualTo("3");
+            assertThat(capturedRequests.get(0).header("X-YouTube-Client-Name")).isEqualTo("5");
         }
 
         @Test
-        @DisplayName("X-YouTube-Client-Version == 21.02.35")
+        @DisplayName("X-YouTube-Client-Version == 21.02.3")
         void fetchPlayer_clientVersionHeader() {
             client.fetchPlayer(VideoId.of("dQw4w9WgXcQ"));
 
-            assertThat(capturedRequests.get(0).header("X-YouTube-Client-Version")).isEqualTo("21.02.35");
+            assertThat(capturedRequests.get(0).header("X-YouTube-Client-Version")).isEqualTo("21.02.3");
         }
 
         @Test

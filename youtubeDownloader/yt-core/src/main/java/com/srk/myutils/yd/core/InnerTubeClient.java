@@ -18,7 +18,7 @@ import java.time.Duration;
 
 /**
  * Issues a single POST to YouTube's InnerTube {@code /youtubei/v1/player}
- * endpoint using the ANDROID client context (ADR-0001).
+ * endpoint using the IOS client context (ADR-0001, as amended for SABR bypass).
  *
  * <p>Constructs the request body per AC-12.1 and
  * {@code 06-formal/innertube-player-request.schema.json}. Sets headers per
@@ -43,18 +43,22 @@ public final class InnerTubeClient {
 
     private static final MediaType JSON = MediaType.get("application/json");
 
-    // AC-12.1 / NFR-ANDROID-* constants
-    private static final String CLIENT_NAME = "ANDROID";
-    private static final String CLIENT_VERSION = "21.02.35";       // NFR-ANDROID-CLIENT-VERSION
-    private static final int ANDROID_SDK_VERSION = 30;             // NFR-ANDROID-SDK-VERSION
+    // IOS client — mirrors yt-dlp INNERTUBE_CLIENTS['ios']. Replaces the original
+    // ANDROID client (and the ANDROID_VR probe): IOS returns direct CDN URLs without
+    // a PO Token for the widest range of videos, including Shorts that ANDROID_VR and
+    // TVHTML5 reject with LOGIN_REQUIRED. Bypasses SABR (serverAbrStreamingUrl) gating.
+    private static final String CLIENT_NAME = "IOS";
+    private static final String CLIENT_VERSION = "21.02.3";
     private static final String HL = "en";                         // NFR-INNERTUBE-HL
     private static final String GL = "US";                         // NFR-INNERTUBE-GL
-    private static final String OS_NAME = "Android";
-    private static final String OS_VERSION = "11";
-    private static final String PLATFORM = "MOBILE";
+    private static final String DEVICE_MAKE = "Apple";
+    private static final String DEVICE_MODEL = "iPhone16,2";
+    private static final String OS_NAME = "iPhone";
+    private static final String OS_VERSION = "18.3.2.22D82";
+    private static final String CLIENT_NAME_HEADER = "5";          // X-YouTube-Client-Name for IOS
 
-    // AC-12.2 / NFR-ANDROID-USER-AGENT
-    private static final String USER_AGENT = HttpConstants.ANDROID_USER_AGENT;
+    // AC-12.2 — User-Agent matching the IOS client
+    private static final String USER_AGENT = HttpConstants.IOS_USER_AGENT;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -100,7 +104,7 @@ public final class InnerTubeClient {
                 .url(PLAYER_ENDPOINT)
                 .post(RequestBody.create(jsonBody, JSON))
                 .header("User-Agent", USER_AGENT)
-                .header("X-YouTube-Client-Name", "3")
+                .header("X-YouTube-Client-Name", CLIENT_NAME_HEADER)
                 .header("X-YouTube-Client-Version", CLIENT_VERSION)
                 .header("Accept-Language", "en-US,en;q=0.9")
                 .build();
@@ -110,6 +114,22 @@ public final class InnerTubeClient {
             String bodyString = (body != null) ? body.string() : "";
 
             LOGGER.info("InnerTube response: status={} size={}", response.code(), bodyString.length());
+            LOGGER.info("InnerTube body contains \"url\": {}, \"signatureCipher\": {}, \"serverAbrStreamingUrl\": {}",
+                    bodyString.contains("\"url\""),
+                    bodyString.contains("\"signatureCipher\""),
+                    bodyString.contains("\"serverAbrStreamingUrl\""));
+            int adaptiveIdx = bodyString.indexOf("\"adaptiveFormats\"");
+            if (adaptiveIdx >= 0) {
+                int snippetEnd = Math.min(adaptiveIdx + 600, bodyString.length());
+                LOGGER.info("InnerTube adaptiveFormats snippet [{}..{}]: {}",
+                        adaptiveIdx, snippetEnd, bodyString.substring(adaptiveIdx, snippetEnd));
+            } else {
+                LOGGER.warn("InnerTube body has no \"adaptiveFormats\" substring");
+                // Error/playability-only responses are small — dump in full for diagnosis.
+                if (bodyString.length() <= 4000) {
+                    LOGGER.warn("InnerTube full body (no adaptiveFormats): {}", bodyString);
+                }
+            }
 
             return new InnerTubeResponse(response.code(), bodyString);
         } catch (IOException e) {
@@ -127,12 +147,12 @@ public final class InnerTubeClient {
         ObjectNode clientNode = JsonNodeFactory.instance.objectNode()
                 .put("clientName", CLIENT_NAME)
                 .put("clientVersion", CLIENT_VERSION)
-                .put("androidSdkVersion", ANDROID_SDK_VERSION)
-                .put("hl", HL)
-                .put("gl", GL)
+                .put("deviceMake", DEVICE_MAKE)
+                .put("deviceModel", DEVICE_MODEL)
                 .put("osName", OS_NAME)
                 .put("osVersion", OS_VERSION)
-                .put("platform", PLATFORM);
+                .put("hl", HL)
+                .put("gl", GL);
 
         ObjectNode contextNode = JsonNodeFactory.instance.objectNode();
         contextNode.set("client", clientNode);

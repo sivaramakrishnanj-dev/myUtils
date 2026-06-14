@@ -150,11 +150,18 @@ public final class FormatSelector {
      * @throws NoMatchingFormatException if no suitable video or audio format is found (exit 30)
      */
     public FormatSelection select(List<Format> formats, int maxHeight) {
+        LOGGER.info("FormatSelector.select input: total={} maxHeight={}", formats.size(), maxHeight);
+        for (Format f : formats) {
+            LOGGER.info("  candidate itag={} mime={} {}x{} bitrate={} url.len={} cipher.len={}",
+                    f.itag(), f.mimeType(),
+                    f.width().orElse(0), f.height().orElse(0), f.bitrate(),
+                    f.url().length(), f.signatureCipher().length());
+        }
         Format video = selectVideo(formats, maxHeight);
         Format audio = selectAudio(formats);
-        LOGGER.info("Format selected: video itag={} {}p {} {}bps, audio itag={} {}bps",
-                video.itag(), video.height().orElse(0), codecName(video.mimeType()), video.bitrate(),
-                audio.itag(), audio.bitrate());
+        LOGGER.info("Format selected: video itag={} {}p {} {}bps url.len={}, audio itag={} {}bps url.len={}",
+                video.itag(), video.height().orElse(0), codecName(video.mimeType()), video.bitrate(), video.url().length(),
+                audio.itag(), audio.bitrate(), audio.url().length());
         return new FormatSelection(video, audio);
     }
 

@@ -160,11 +160,18 @@ public final class PlayerResponseExtractor {
     }
 
     private static List<Format> parseAdaptiveFormats(JsonNode root) {
-        JsonNode formatsNode = root.path("streamingData").path("adaptiveFormats");
+        JsonNode streamingData = root.path("streamingData");
+        LOGGER.info("streamingData keys: {}", fieldNames(streamingData));
+        LOGGER.info("streamingData.serverAbrStreamingUrl present: {}",
+                !streamingData.path("serverAbrStreamingUrl").isMissingNode());
+
+        JsonNode formatsNode = streamingData.path("adaptiveFormats");
         if (formatsNode.isMissingNode() || !formatsNode.isArray()) {
+            LOGGER.warn("adaptiveFormats missing or not an array");
             return Collections.emptyList();
         }
 
+        LOGGER.info("adaptiveFormats count: {}", formatsNode.size());
         List<Format> formats = new ArrayList<>(formatsNode.size());
         for (JsonNode f : formatsNode) {
             formats.add(parseFormat(f));
@@ -187,8 +194,20 @@ public final class PlayerResponseExtractor {
         String signatureCipher = f.has("signatureCipher")
                 ? f.get("signatureCipher").asText() : "";
 
+        LOGGER.info("parseFormat itag={} mime={} keys={} url.len={} cipher.len={}",
+                itag, mimeType, fieldNames(f), url.length(), signatureCipher.length());
+
         return new Format(itag, mimeType, bitrate, width, height, fps,
                 audioSampleRate, contentLength, url, signatureCipher);
+    }
+
+    private static String fieldNames(JsonNode node) {
+        if (node == null || node.isMissingNode() || !node.isObject()) {
+            return "[]";
+        }
+        List<String> names = new ArrayList<>();
+        node.fieldNames().forEachRemaining(names::add);
+        return names.toString();
     }
 
     private static List<CaptionTrack> parseCaptionTracks(JsonNode root) {
