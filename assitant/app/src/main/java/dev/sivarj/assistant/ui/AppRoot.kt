@@ -6,6 +6,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -22,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import dev.sivarj.assistant.ui.habits.HabitsScreen
 import dev.sivarj.assistant.ui.ideas.IdeasScreen
 import dev.sivarj.assistant.ui.journal.JournalScreen
+import dev.sivarj.assistant.ui.settings.SettingsScreen
 import dev.sivarj.assistant.ui.todos.TodosScreen
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector)
@@ -31,6 +33,7 @@ private val tabs = listOf(
     Tab("journal", "Journal", Icons.AutoMirrored.Filled.MenuBook),
     Tab("ideas", "Ideas", Icons.Default.Lightbulb),
     Tab("habits", "Habits", Icons.Default.LocalFireDepartment),
+    Tab("settings", "Settings", Icons.Default.Settings),
 )
 
 @Composable
@@ -68,6 +71,7 @@ fun AssistantAppRoot() {
             composable("journal") { JournalScreen() }
             composable("ideas") { IdeasScreen() }
             composable("habits") { HabitsScreen() }
+            composable("settings") { SettingsScreen() }
         }
     }
 }

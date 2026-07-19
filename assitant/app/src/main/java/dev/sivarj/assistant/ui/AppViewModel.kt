@@ -7,11 +7,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.sivarj.assistant.AssistantApp
 import dev.sivarj.assistant.data.AppDatabase
+import dev.sivarj.assistant.settings.AppSettings
+import dev.sivarj.assistant.ui.settings.SettingsViewModel
 
-/**
- * All screen view models take the database as their sole constructor arg;
- * this factory wires them to the singleton owned by [AssistantApp].
- */
 class DbViewModelFactory(private val db: AppDatabase) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -20,8 +18,22 @@ class DbViewModelFactory(private val db: AppDatabase) : ViewModelProvider.Factor
     }
 }
 
+class SettingsViewModelFactory(private val settings: AppSettings) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        val ctor = modelClass.getConstructor(AppSettings::class.java)
+        return ctor.newInstance(settings) as T
+    }
+}
+
 @Composable
 inline fun <reified VM : ViewModel> appViewModel(): VM {
     val app = LocalContext.current.applicationContext as AssistantApp
     return viewModel(factory = DbViewModelFactory(app.database))
+}
+
+@Composable
+fun appSettingsViewModel(): SettingsViewModel {
+    val app = LocalContext.current.applicationContext as AssistantApp
+    return viewModel(factory = SettingsViewModelFactory(app.settings))
 }

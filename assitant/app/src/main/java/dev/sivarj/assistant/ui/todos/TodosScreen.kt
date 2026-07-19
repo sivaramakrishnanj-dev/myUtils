@@ -37,8 +37,10 @@ import androidx.compose.ui.unit.dp
 import dev.sivarj.assistant.data.Todo
 import dev.sivarj.assistant.data.TodoStatus
 import dev.sivarj.assistant.ui.appViewModel
+import dev.sivarj.assistant.ai.ContentType
 import dev.sivarj.assistant.ui.components.CategoryPicker
 import dev.sivarj.assistant.ui.components.DictationField
+import dev.sivarj.assistant.ui.components.EnrichButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -178,6 +180,15 @@ private fun TodoEditor(
             label = "Notes",
             minLines = 2,
             modifier = Modifier.fillMaxWidth(),
+        )
+        EnrichButton(
+            rawText = if (title.isNotBlank()) "$title\n$notes" else notes,
+            contentType = ContentType.TODO,
+            onEnriched = { enriched ->
+                val lines = enriched.lines().map { it.removePrefix("- ").trim() }.filter { it.isNotBlank() }
+                title = lines.firstOrNull() ?: title
+                notes = lines.drop(1).joinToString("\n")
+            },
         )
         CategoryPicker(
             categories = categories,

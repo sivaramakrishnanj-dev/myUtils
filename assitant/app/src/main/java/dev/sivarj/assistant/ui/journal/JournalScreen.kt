@@ -37,8 +37,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.sivarj.assistant.data.AppDatabase
 import dev.sivarj.assistant.data.JournalEntry
+import dev.sivarj.assistant.ai.ContentType
 import dev.sivarj.assistant.ui.appViewModel
 import dev.sivarj.assistant.ui.components.DictationField
+import dev.sivarj.assistant.ui.components.EnrichButton
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -132,6 +134,11 @@ fun JournalScreen(vm: JournalViewModel = appViewModel()) {
                     label = "What's on your mind?",
                     minLines = 6,
                     modifier = Modifier.fillMaxWidth(),
+                )
+                EnrichButton(
+                    rawText = content,
+                    contentType = ContentType.JOURNAL,
+                    onEnriched = { content = it },
                 )
                 Row(Modifier.fillMaxWidth().padding(bottom = 24.dp), horizontalArrangement = Arrangement.End) {
                     TextButton(

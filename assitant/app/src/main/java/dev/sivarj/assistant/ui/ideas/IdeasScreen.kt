@@ -39,9 +39,11 @@ import dev.sivarj.assistant.data.AppDatabase
 import dev.sivarj.assistant.data.Category
 import dev.sivarj.assistant.data.CategoryType
 import dev.sivarj.assistant.data.Idea
+import dev.sivarj.assistant.ai.ContentType
 import dev.sivarj.assistant.ui.appViewModel
 import dev.sivarj.assistant.ui.components.CategoryPicker
 import dev.sivarj.assistant.ui.components.DictationField
+import dev.sivarj.assistant.ui.components.EnrichButton
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -160,6 +162,11 @@ fun IdeasScreen(vm: IdeasViewModel = appViewModel()) {
                     label = "Your idea",
                     minLines = 3,
                     modifier = Modifier.fillMaxWidth(),
+                )
+                EnrichButton(
+                    rawText = content,
+                    contentType = ContentType.IDEA,
+                    onEnriched = { content = it },
                 )
                 CategoryPicker(
                     categories = categories,
