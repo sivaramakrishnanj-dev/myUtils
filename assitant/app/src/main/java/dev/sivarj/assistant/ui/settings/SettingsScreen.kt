@@ -26,12 +26,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.sivarj.assistant.settings.AppSettings
 import dev.sivarj.assistant.settings.AwsConfig
+import dev.sivarj.assistant.sync.SyncScheduler
 import dev.sivarj.assistant.ui.appSettingsViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -64,6 +66,7 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
     var s3Bucket by remember(config) { mutableStateOf(config.s3Bucket) }
     var modelExpanded by remember { mutableStateOf(false) }
     val modelLabel = AVAILABLE_MODELS.find { it.first == modelId }?.second ?: modelId
+    val context = LocalContext.current
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Settings") }) },
@@ -132,6 +135,10 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            TextButton(
+                onClick = { SyncScheduler.syncNow(context) },
+                enabled = s3Bucket.isNotBlank() && accessKey.isNotBlank(),
+            ) { Text("Sync now") }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = {
