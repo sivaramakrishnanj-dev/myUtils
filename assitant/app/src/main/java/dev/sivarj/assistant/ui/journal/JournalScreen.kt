@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,6 +38,7 @@ import androidx.lifecycle.viewModelScope
 import dev.sivarj.assistant.data.AppDatabase
 import dev.sivarj.assistant.data.JournalEntry
 import dev.sivarj.assistant.ui.appViewModel
+import dev.sivarj.assistant.ui.components.DictationField
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -126,10 +126,10 @@ fun JournalScreen(vm: JournalViewModel = appViewModel()) {
                     if (editing == null) "New entry" else "Edit entry",
                     style = MaterialTheme.typography.titleMedium,
                 )
-                OutlinedTextField(
+                DictationField(
                     value = content,
                     onValueChange = { content = it },
-                    label = { Text("What's on your mind?") },
+                    label = "What's on your mind?",
                     minLines = 6,
                     modifier = Modifier.fillMaxWidth(),
                 )

@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,7 +38,7 @@ import dev.sivarj.assistant.data.Todo
 import dev.sivarj.assistant.data.TodoStatus
 import dev.sivarj.assistant.ui.appViewModel
 import dev.sivarj.assistant.ui.components.CategoryPicker
-import dev.sivarj.assistant.ui.components.categoryDisplayName
+import dev.sivarj.assistant.ui.components.DictationField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -166,17 +165,17 @@ private fun TodoEditor(
             if (initial == null) "New todo" else "Edit todo",
             style = MaterialTheme.typography.titleMedium,
         )
-        OutlinedTextField(
+        DictationField(
             value = title,
             onValueChange = { title = it },
-            label = { Text("Title") },
+            label = "Title",
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(
+        DictationField(
             value = notes,
             onValueChange = { notes = it },
-            label = { Text("Notes") },
+            label = "Notes",
             minLines = 2,
             modifier = Modifier.fillMaxWidth(),
         )

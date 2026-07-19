@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,6 +41,7 @@ import dev.sivarj.assistant.data.CategoryType
 import dev.sivarj.assistant.data.Idea
 import dev.sivarj.assistant.ui.appViewModel
 import dev.sivarj.assistant.ui.components.CategoryPicker
+import dev.sivarj.assistant.ui.components.DictationField
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -154,10 +154,10 @@ fun IdeasScreen(vm: IdeasViewModel = appViewModel()) {
                     if (editing == null) "New idea" else "Edit idea",
                     style = MaterialTheme.typography.titleMedium,
                 )
-                OutlinedTextField(
+                DictationField(
                     value = content,
                     onValueChange = { content = it },
-                    label = { Text("Your idea") },
+                    label = "Your idea",
                     minLines = 3,
                     modifier = Modifier.fillMaxWidth(),
                 )
