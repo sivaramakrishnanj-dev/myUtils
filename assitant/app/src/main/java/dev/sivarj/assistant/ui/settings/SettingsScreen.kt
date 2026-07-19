@@ -8,10 +8,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
@@ -25,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -33,18 +41,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.sivarj.assistant.settings.AppSettings
 import dev.sivarj.assistant.settings.AwsConfig
+import dev.sivarj.assistant.settings.BedrockModel
 import dev.sivarj.assistant.sync.SyncScheduler
 import dev.sivarj.assistant.ui.appSettingsViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
-val AVAILABLE_MODELS = listOf(
-    "us.anthropic.claude-sonnet-4-20250514-v1:0" to "Claude Sonnet 4",
-    "us.anthropic.claude-haiku-4-5-20251001-v1:0" to "Claude Haiku 4.5",
-    "anthropic.claude-3-haiku-20240307-v1:0" to "Claude 3 Haiku",
-    "anthropic.claude-3-5-sonnet-20241022-v2:0" to "Claude 3.5 Sonnet v2",
-)
 
 class SettingsViewModel(private val settings: AppSettings) : ViewModel() {
     val config = settings.awsConfig
@@ -64,9 +66,33 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
     var region by remember(config) { mutableStateOf(config.region) }
     var modelId by remember(config) { mutableStateOf(config.bedrockModelId) }
     var s3Bucket by remember(config) { mutableStateOf(config.s3Bucket) }
+    var customModels by remember(config) { mutableStateOf(config.customModels) }
+    var promptTodo by remember(config) { mutableStateOf(config.promptTodo) }
+    var promptJournal by remember(config) { mutableStateOf(config.promptJournal) }
+    var promptIdea by remember(config) { mutableStateOf(config.promptIdea) }
+
     var modelExpanded by remember { mutableStateOf(false) }
-    val modelLabel = AVAILABLE_MODELS.find { it.first == modelId }?.second ?: modelId
+    var showAddModel by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    val allModels = config.allModels
+    val modelLabel = allModels.find { it.id == modelId }?.name ?: modelId
+
+    fun saveAll() {
+        vm.save(
+            AwsConfig(
+                accessKey = accessKey.trim(),
+                secretKey = secretKey.trim(),
+                region = region.trim().ifBlank { "us-east-1" },
+                bedrockModelId = modelId,
+                s3Bucket = s3Bucket.trim(),
+                customModels = customModels,
+                promptTodo = promptTodo,
+                promptJournal = promptJournal,
+                promptIdea = promptIdea,
+            )
+        )
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Settings") }) },
@@ -79,6 +105,7 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // --- AWS Credentials ---
             Text("AWS Credentials", style = MaterialTheme.typography.titleSmall)
             OutlinedTextField(
                 value = accessKey,
@@ -103,6 +130,9 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+
+            // --- Bedrock Model ---
             Text("Bedrock Model", style = MaterialTheme.typography.titleSmall)
             ExposedDropdownMenuBox(expanded = modelExpanded, onExpandedChange = { modelExpanded = it }) {
                 OutlinedTextField(
@@ -115,11 +145,11 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                         .fillMaxWidth(),
                 )
                 ExposedDropdownMenu(expanded = modelExpanded, onDismissRequest = { modelExpanded = false }) {
-                    AVAILABLE_MODELS.forEach { (id, label) ->
+                    allModels.forEach { model ->
                         DropdownMenuItem(
-                            text = { Text(label) },
+                            text = { Text(model.name) },
                             onClick = {
-                                modelId = id
+                                modelId = model.id
                                 modelExpanded = false
                             },
                         )
@@ -127,6 +157,63 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 }
             }
 
+            // Custom models list
+            if (customModels.isNotEmpty()) {
+                Text("Custom models", style = MaterialTheme.typography.labelMedium)
+                customModels.forEach { model ->
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(model.name, style = MaterialTheme.typography.bodyMedium)
+                            Text(model.id, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        IconButton(onClick = { customModels = customModels - model }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            }
+            TextButton(onClick = { showAddModel = true }) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Text("Add model")
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+
+            // --- Enrichment Prompts ---
+            Text("Enrichment Prompts", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "These are the system prompts sent to the LLM when enriching content.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = promptTodo,
+                onValueChange = { promptTodo = it },
+                label = { Text("Todo prompt") },
+                minLines = 3,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = promptJournal,
+                onValueChange = { promptJournal = it },
+                label = { Text("Journal prompt") },
+                minLines = 3,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = promptIdea,
+                onValueChange = { promptIdea = it },
+                label = { Text("Idea prompt") },
+                minLines = 3,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+
+            // --- S3 Sync ---
             Text("S3 Sync", style = MaterialTheme.typography.titleSmall)
             OutlinedTextField(
                 value = s3Bucket,
@@ -140,19 +227,50 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 enabled = s3Bucket.isNotBlank() && accessKey.isNotBlank(),
             ) { Text("Sync now") }
 
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = {
-                    vm.save(
-                        AwsConfig(
-                            accessKey = accessKey.trim(),
-                            secretKey = secretKey.trim(),
-                            region = region.trim().ifBlank { "us-east-1" },
-                            bedrockModelId = modelId,
-                            s3Bucket = s3Bucket.trim(),
-                        )
-                    )
-                }) { Text("Save") }
+            // --- Save ---
+            Row(Modifier.fillMaxWidth().padding(bottom = 24.dp), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { saveAll() }) { Text("Save") }
             }
         }
+    }
+
+    // --- Add Model Dialog ---
+    if (showAddModel) {
+        var newModelId by remember { mutableStateOf("") }
+        var newModelName by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showAddModel = false },
+            title = { Text("Add model") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = newModelId,
+                        onValueChange = { newModelId = it },
+                        label = { Text("Model ID") },
+                        placeholder = { Text("e.g. us.anthropic.claude-…") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = newModelName,
+                        onValueChange = { newModelName = it },
+                        label = { Text("Friendly name") },
+                        placeholder = { Text("e.g. Claude Opus 4.8") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = newModelId.isNotBlank() && newModelName.isNotBlank(),
+                    onClick = {
+                        customModels = customModels + BedrockModel(newModelId.trim(), newModelName.trim())
+                        showAddModel = false
+                    },
+                ) { Text("Add") }
+            },
+            dismissButton = { TextButton(onClick = { showAddModel = false }) { Text("Cancel") } },
+        )
     }
 }
