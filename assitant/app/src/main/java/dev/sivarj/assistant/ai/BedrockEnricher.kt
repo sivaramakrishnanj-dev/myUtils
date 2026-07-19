@@ -1,5 +1,6 @@
 package dev.sivarj.assistant.ai
 
+import android.util.Log
 import aws.sdk.kotlin.services.bedrockruntime.BedrockRuntimeClient
 import aws.sdk.kotlin.services.bedrockruntime.model.ContentBlock
 import aws.sdk.kotlin.services.bedrockruntime.model.ConversationRole
@@ -75,8 +76,20 @@ class BedrockEnricher(private val config: AwsConfig) {
                 else EnrichResult.Success(text.trim())
             }
         } catch (e: Exception) {
-            EnrichResult.Failure(e.message ?: "Unknown error calling Bedrock")
+            Log.e(TAG, "Bedrock converse failed", e)
+            // Surface the deepest meaningful message so the UI shows the real
+            // cause, not just the top-level wrapper (whose message is often null).
+            val messages = generateSequence<Throwable>(e) { it.cause }
+                .mapNotNull { t -> t.message?.let { "${t.javaClass.simpleName}: $it" } }
+                .toList()
+            val detail = messages.lastOrNull()
+                ?: "${e.javaClass.simpleName} (no message) — check logcat"
+            EnrichResult.Failure(detail)
         }
+    }
+
+    private companion object {
+        const val TAG = "BedrockEnricher"
     }
 }
 
