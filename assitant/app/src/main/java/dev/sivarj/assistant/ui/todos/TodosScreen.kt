@@ -182,6 +182,13 @@ private fun TodoEditor(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
+        EnrichButton(
+            rawText = title,
+            contentType = ContentType.TODO,
+            onEnriched = { enriched ->
+                title = enriched.lines().firstOrNull()?.removePrefix("- ")?.trim() ?: enriched.trim()
+            },
+        )
         DictationField(
             value = notes,
             onValueChange = { notes = it },
@@ -191,13 +198,9 @@ private fun TodoEditor(
             modifier = Modifier.fillMaxWidth(),
         )
         EnrichButton(
-            rawText = if (title.isNotBlank()) "$title\n$notes" else notes,
+            rawText = notes,
             contentType = ContentType.TODO,
-            onEnriched = { enriched ->
-                val lines = enriched.lines().map { it.removePrefix("- ").trim() }.filter { it.isNotBlank() }
-                title = lines.firstOrNull() ?: title
-                notes = lines.drop(1).joinToString("\n")
-            },
+            onEnriched = { notes = it },
         )
         CategoryPicker(
             categories = categories,
