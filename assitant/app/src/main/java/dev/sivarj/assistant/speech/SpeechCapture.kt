@@ -30,9 +30,11 @@ sealed interface SpeechState {
 }
 
 /**
- * Wraps [SpeechRecognizer] for Compose: handles the RECORD_AUDIO permission
- * request, lifecycle-safe recognizer creation/destruction, and reduces the
- * listener callbacks to [state] + a single [onResult] with the final text.
+ * Wraps [SpeechRecognizer] for Compose with **continuous dictation**: Android
+ * ends a recognition session at every pause in speech, so this controller
+ * delivers the recognized segment and immediately starts a new session.
+ * Listening therefore survives pauses and only ends when [stop] is called
+ * (or an unrecoverable error occurs).
  */
 class SpeechCaptureController internal constructor(
     private val context: Context,
@@ -41,6 +43,9 @@ class SpeechCaptureController internal constructor(
 ) {
     private var recognizer: SpeechRecognizer? = null
     internal var requestPermission: (() -> Unit)? = null
+
+    /** True from start() until the user taps stop (or a hard error). */
+    private var sessionActive = false
 
     val isAvailable: Boolean
         get() = SpeechRecognizer.isRecognitionAvailable(context)
@@ -60,7 +65,13 @@ class SpeechCaptureController internal constructor(
             onStateChange(SpeechState.Error("Speech recognition is not available on this device"))
             return
         }
-        stop()
+        sessionActive = true
+        startRecognitionCycle()
+    }
+
+    /** One SpeechRecognizer session; re-invoked after each pause while [sessionActive]. */
+    private fun startRecognitionCycle() {
+        destroyRecognizer()
         val r = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer = r
         r.setRecognitionListener(object : RecognitionListener {
@@ -71,15 +82,30 @@ class SpeechCaptureController internal constructor(
             override fun onEndOfSpeech() {}
 
             override fun onError(error: Int) {
-                val message = when (error) {
+                when (error) {
+                    // A pause with no speech, or a transient race on restart:
+                    // keep the continuous session going.
                     SpeechRecognizer.ERROR_NO_MATCH,
-                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Didn't catch that — try again"
-                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission denied"
-                    SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
-                    SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED -> "Language pack not available offline"
-                    else -> "Speech recognition error ($error)"
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
+                    SpeechRecognizer.ERROR_CLIENT,
+                    SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
+                    -> {
+                        if (sessionActive) startRecognitionCycle()
+                        else onStateChange(SpeechState.Idle)
+                    }
+
+                    else -> {
+                        sessionActive = false
+                        val message = when (error) {
+                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission denied"
+                            SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
+                            SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
+                            -> "Language pack not available offline"
+                            else -> "Speech recognition error ($error)"
+                        }
+                        onStateChange(SpeechState.Error(message))
+                    }
                 }
-                onStateChange(SpeechState.Error(message))
             }
 
             override fun onResults(results: Bundle?) {
@@ -87,8 +113,10 @@ class SpeechCaptureController internal constructor(
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()
                     .orEmpty()
-                onStateChange(SpeechState.Idle)
                 if (text.isNotBlank()) onResult(text)
+                // The user paused — deliver the segment and keep listening.
+                if (sessionActive) startRecognitionCycle()
+                else onStateChange(SpeechState.Idle)
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
@@ -105,11 +133,21 @@ class SpeechCaptureController internal constructor(
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            // Hints to tolerate longer pauses within one session (best-effort;
+            // some recognizer implementations ignore these).
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
         }
         r.startListening(intent)
     }
 
     fun stop() {
+        sessionActive = false
+        destroyRecognizer()
+        onStateChange(SpeechState.Idle)
+    }
+
+    private fun destroyRecognizer() {
         recognizer?.destroy()
         recognizer = null
     }
@@ -117,7 +155,7 @@ class SpeechCaptureController internal constructor(
 
 /**
  * Remembers a [SpeechCaptureController] and exposes its current [SpeechState].
- * Final recognized text arrives through [onResult].
+ * Final recognized text arrives through [onResult], one segment per pause.
  */
 @Composable
 fun rememberSpeechCapture(onResult: (String) -> Unit): Pair<SpeechCaptureController, SpeechState> {
