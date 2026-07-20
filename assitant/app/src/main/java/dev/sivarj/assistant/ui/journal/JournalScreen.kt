@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -123,16 +125,25 @@ fun JournalScreen(vm: JournalViewModel = appViewModel()) {
     if (showEditor) {
         ModalBottomSheet(onDismissRequest = { showEditor = false }) {
             var content by remember { mutableStateOf(editing?.content ?: "") }
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Text(
                     if (editing == null) "New entry" else "Edit entry",
                     style = MaterialTheme.typography.titleMedium,
                 )
+                // maxLines caps the field height so long entries scroll inside
+                // the field instead of pushing Save off the bottom sheet.
                 DictationField(
                     value = content,
                     onValueChange = { content = it },
                     label = "What's on your mind?",
                     minLines = 6,
+                    maxLines = 12,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 EnrichButton(

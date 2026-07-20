@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -162,7 +164,13 @@ private fun TodoEditor(
     var notes by remember { mutableStateOf(initial?.notes ?: "") }
     var categoryId by remember { mutableStateOf(initial?.categoryId) }
 
-    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         Text(
             if (initial == null) "New todo" else "Edit todo",
             style = MaterialTheme.typography.titleMedium,
@@ -179,6 +187,7 @@ private fun TodoEditor(
             onValueChange = { notes = it },
             label = "Notes",
             minLines = 2,
+            maxLines = 8,
             modifier = Modifier.fillMaxWidth(),
         )
         EnrichButton(

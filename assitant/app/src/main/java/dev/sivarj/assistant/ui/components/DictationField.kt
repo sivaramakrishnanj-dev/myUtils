@@ -28,6 +28,7 @@ fun DictationField(
     modifier: Modifier = Modifier,
     singleLine: Boolean = false,
     minLines: Int = 1,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
 ) {
     val (controller, state) = rememberSpeechCapture { recognized ->
         val joined = if (value.isBlank()) recognized else "${value.trimEnd()} $recognized"
@@ -41,6 +42,7 @@ fun DictationField(
             label = { Text(label) },
             singleLine = singleLine,
             minLines = minLines,
+            maxLines = maxLines,
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = {
                 if (state is SpeechState.Listening || state is SpeechState.Partial) {

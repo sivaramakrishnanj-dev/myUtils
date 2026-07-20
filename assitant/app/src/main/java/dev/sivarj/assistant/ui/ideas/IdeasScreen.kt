@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -151,7 +153,13 @@ fun IdeasScreen(vm: IdeasViewModel = appViewModel()) {
         ModalBottomSheet(onDismissRequest = { showEditor = false }) {
             var content by remember { mutableStateOf(editing?.content ?: "") }
             var categoryId by remember { mutableStateOf(editing?.categoryId) }
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Text(
                     if (editing == null) "New idea" else "Edit idea",
                     style = MaterialTheme.typography.titleMedium,
@@ -161,6 +169,7 @@ fun IdeasScreen(vm: IdeasViewModel = appViewModel()) {
                     onValueChange = { content = it },
                     label = "Your idea",
                     minLines = 3,
+                    maxLines = 10,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 EnrichButton(
