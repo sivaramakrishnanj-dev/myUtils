@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -46,13 +47,18 @@ import dev.sivarj.assistant.ai.ContentType
 import dev.sivarj.assistant.ai.EnrichResult
 import dev.sivarj.assistant.data.AppDatabase
 import dev.sivarj.assistant.data.Appointment
+import dev.sivarj.assistant.domain.FreeSlot
+import dev.sivarj.assistant.domain.computeFreeTime
+import dev.sivarj.assistant.domain.formatDuration
 import dev.sivarj.assistant.domain.parseAppointmentJson
 import dev.sivarj.assistant.ui.appViewModel
 import dev.sivarj.assistant.ui.components.DictationField
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 class DayViewModel(private val db: AppDatabase) : ViewModel() {
@@ -67,6 +73,78 @@ class DayViewModel(private val db: AppDatabase) : ViewModel() {
 
     fun delete(appointment: Appointment) {
         viewModelScope.launch { db.appointmentDao().softDelete(appointment.id) }
+    }
+}
+
+/** A row in the day view: either a booked appointment or an open gap. */
+private sealed interface ScheduleRow {
+    data class Booked(val appointment: Appointment) : ScheduleRow
+    data class Free(val slot: FreeSlot) : ScheduleRow
+}
+
+/**
+ * Merges appointments (sorted by start) and free slots into one chronological
+ * list, keyed on start time.
+ */
+private fun buildScheduleRows(
+    appointments: List<Appointment>,
+    freeSlots: List<FreeSlot>,
+): List<ScheduleRow> {
+    val rows = appointments.map { ScheduleRow.Booked(it) as ScheduleRow } +
+        freeSlots.map { ScheduleRow.Free(it) }
+    return rows.sortedBy { row ->
+        when (row) {
+            is ScheduleRow.Booked -> row.appointment.startMinutes
+            is ScheduleRow.Free -> row.slot.startMinutes
+        }
+    }
+}
+
+@Composable
+private fun AppointmentCard(
+    appt: Appointment,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Card(onClick = onClick) {
+        Row(
+            Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(appt.title, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "${minutesToDisplay(appt.startMinutes)} – ${minutesToDisplay(appt.endMinutes)}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (appt.notes.isNotBlank()) {
+                    Text(appt.notes, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                }
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.outline)
+            }
+        }
+    }
+}
+
+@Composable
+private fun FreeSlotRow(slot: FreeSlot) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "◦ ${minutesToDisplay(slot.startMinutes)} – ${minutesToDisplay(slot.endMinutes)}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.tertiary,
+        )
+        Text(
+            "  free · ${formatDuration(slot.durationMinutes)}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -90,6 +168,22 @@ fun DayScreen(vm: DayViewModel = appViewModel()) {
     var editing by remember { mutableStateOf<Appointment?>(null) }
     val today = LocalDate.now()
 
+    // Re-evaluate "now" every minute so free-time numbers stay current.
+    var nowMinutes by remember { mutableIntStateOf(LocalTime.now().toSecondOfDay() / 60) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000)
+            nowMinutes = LocalTime.now().toSecondOfDay() / 60
+        }
+    }
+
+    val freeTime = remember(appointments, nowMinutes) {
+        computeFreeTime(
+            bookings = appointments.map { it.startMinutes..it.endMinutes },
+            nowMinutes = nowMinutes,
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(title = {
@@ -103,39 +197,56 @@ fun DayScreen(vm: DayViewModel = appViewModel()) {
             }) { Icon(Icons.Default.Add, contentDescription = "New appointment") }
         },
     ) { padding ->
-        if (appointments.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("No appointments today.", style = MaterialTheme.typography.bodyLarge)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // Free-time summary header
+            item(key = "free-summary") {
+                Card {
+                    Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                        Text(
+                            if (freeTime.totalFreeMinutes > 0)
+                                "Free time left today: ${formatDuration(freeTime.totalFreeMinutes)}"
+                            else
+                                "No free time left today",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        if (freeTime.slots.isNotEmpty()) {
+                            Text(
+                                "${freeTime.slots.size} open window${if (freeTime.slots.size == 1) "" else "s"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(appointments, key = { it.id }) { appt ->
-                    Card(onClick = {
-                        editing = appt
-                        showEditor = true
-                    }) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(appt.title, style = MaterialTheme.typography.bodyLarge)
-                                Text(
-                                    "${minutesToDisplay(appt.startMinutes)} – ${minutesToDisplay(appt.endMinutes)}",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                                if (appt.notes.isNotBlank()) {
-                                    Text(appt.notes, style = MaterialTheme.typography.bodySmall, maxLines = 2)
-                                }
-                            }
-                            IconButton(onClick = { vm.delete(appt) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.outline)
-                            }
+
+            if (appointments.isEmpty()) {
+                item(key = "empty") {
+                    Box(Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
+                        Text("No appointments today.", style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            } else {
+                // Interleave appointments and the free gaps between them.
+                buildScheduleRows(appointments, freeTime.slots).forEach { row ->
+                    when (row) {
+                        is ScheduleRow.Booked -> item(key = row.appointment.id) {
+                            AppointmentCard(
+                                appt = row.appointment,
+                                onClick = {
+                                    editing = row.appointment
+                                    showEditor = true
+                                },
+                                onDelete = { vm.delete(row.appointment) },
+                            )
+                        }
+                        is ScheduleRow.Free -> item(key = "free-${row.slot.startMinutes}") {
+                            FreeSlotRow(row.slot)
                         }
                     }
                 }
