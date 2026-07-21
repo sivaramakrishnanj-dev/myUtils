@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -22,11 +23,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -74,6 +78,35 @@ class DayViewModel(private val db: AppDatabase) : ViewModel() {
     fun delete(appointment: Appointment) {
         viewModelScope.launch { db.appointmentDao().softDelete(appointment.id) }
     }
+}
+
+/**
+ * Material 3 clock-dial time picker in a dialog. The dial uses the device's
+ * 12/24h preference; in 12h mode it shows the AM/PM toggle.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerDialog(
+    title: String,
+    initialHour: Int,
+    initialMinute: Int,
+    onConfirm: (hour: Int, minute: Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val state = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = false,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { TimePicker(state = state) },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour, state.minute) }) { Text("OK") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 /** A row in the day view: either a booked appointment or an open gap. */
@@ -355,39 +388,51 @@ private fun AppointmentEditor(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // --- Time pickers (simple number fields) ---
-        Text("Start time", style = MaterialTheme.typography.labelMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = startHour.toString(),
-                onValueChange = { startHour = it.toIntOrNull()?.coerceIn(0, 23) ?: startHour },
-                label = { Text("Hour") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
-            OutlinedTextField(
-                value = startMin.toString(),
-                onValueChange = { startMin = it.toIntOrNull()?.coerceIn(0, 59) ?: startMin },
-                label = { Text("Min") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
+        // --- Time selection via Material 3 clock dial (12h + AM/PM) ---
+        var showStartPicker by remember { mutableStateOf(false) }
+        var showEndPicker by remember { mutableStateOf(false) }
+
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(onClick = { showStartPicker = true }, modifier = Modifier.weight(1f)) {
+                Text("Start: ${minutesToDisplay(startHour * 60 + startMin)}")
+            }
+            OutlinedButton(onClick = { showEndPicker = true }, modifier = Modifier.weight(1f)) {
+                Text("End: ${minutesToDisplay(endHour * 60 + endMin)}")
+            }
+        }
+
+        if (showStartPicker) {
+            TimePickerDialog(
+                title = "Start time",
+                initialHour = startHour,
+                initialMinute = startMin,
+                onConfirm = { h, m ->
+                    startHour = h
+                    startMin = m
+                    // Keep end after start: nudge end to +1h when it falls behind.
+                    if (endHour * 60 + endMin <= h * 60 + m) {
+                        endHour = (h + 1).coerceAtMost(23)
+                        endMin = m
+                    }
+                    showStartPicker = false
+                },
+                onDismiss = { showStartPicker = false },
             )
         }
-        Text("End time", style = MaterialTheme.typography.labelMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = endHour.toString(),
-                onValueChange = { endHour = it.toIntOrNull()?.coerceIn(0, 23) ?: endHour },
-                label = { Text("Hour") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
-            OutlinedTextField(
-                value = endMin.toString(),
-                onValueChange = { endMin = it.toIntOrNull()?.coerceIn(0, 59) ?: endMin },
-                label = { Text("Min") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
+        if (showEndPicker) {
+            TimePickerDialog(
+                title = "End time",
+                initialHour = endHour,
+                initialMinute = endMin,
+                onConfirm = { h, m ->
+                    endHour = h
+                    endMin = m
+                    showEndPicker = false
+                },
+                onDismiss = { showEndPicker = false },
             )
         }
 
