@@ -47,6 +47,7 @@ class S3SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             syncIdeas(client, db, config.s3Bucket)
             syncHabits(client, db, config.s3Bucket)
             syncCategories(client, db, config.s3Bucket)
+            syncAppointments(client, db, config.s3Bucket)
         }
     }
 
@@ -106,6 +107,21 @@ class S3SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         }
     }
 
+    private suspend fun syncAppointments(client: S3Client, db: AppDatabase, bucket: String) {
+        val appointments = db.appointmentDao().observeAll().first()
+        appointments.forEach { appt ->
+            val payload = json.encodeToString(
+                SyncAppointment(
+                    id = appt.id, title = appt.title, notes = appt.notes,
+                    epochDay = appt.epochDay, startMinutes = appt.startMinutes,
+                    endMinutes = appt.endMinutes,
+                    createdAt = appt.createdAt, updatedAt = appt.updatedAt,
+                )
+            )
+            putObject(client, bucket, "appointments/${appt.id}.json", payload)
+        }
+    }
+
     private suspend fun syncCategories(client: S3Client, db: AppDatabase, bucket: String) {
         val todoCats = db.categoryDao().observeByType(dev.sivarj.assistant.data.CategoryType.TODO).first()
         val ideaCats = db.categoryDao().observeByType(dev.sivarj.assistant.data.CategoryType.IDEA).first()
@@ -149,6 +165,11 @@ private class StaticCreds(private val ak: String, private val sk: String) : Cred
 @Serializable data class SyncHabit(
     val id: String, val name: String, val archived: Boolean,
     val checkinDays: List<Long>, val createdAt: Long, val updatedAt: Long,
+)
+@Serializable data class SyncAppointment(
+    val id: String, val title: String, val notes: String,
+    val epochDay: Long, val startMinutes: Int, val endMinutes: Int,
+    val createdAt: Long, val updatedAt: Long,
 )
 @Serializable data class SyncCategory(
     val id: String, val name: String, val type: String,

@@ -59,6 +59,21 @@ interface IdeaDao {
 }
 
 @Dao
+interface AppointmentDao {
+    @Query("SELECT * FROM appointments WHERE epochDay = :epochDay AND deleted = 0 ORDER BY startMinutes")
+    fun observeForDay(epochDay: Long): Flow<List<Appointment>>
+
+    @Query("SELECT * FROM appointments WHERE deleted = 0")
+    fun observeAll(): Flow<List<Appointment>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(appointment: Appointment)
+
+    @Query("UPDATE appointments SET deleted = 1, updatedAt = :now WHERE id = :id")
+    suspend fun softDelete(id: String, now: Long = System.currentTimeMillis())
+}
+
+@Dao
 interface HabitDao {
     @Query("SELECT * FROM habits WHERE deleted = 0 ORDER BY archived ASC, createdAt ASC")
     fun observeAll(): Flow<List<Habit>>

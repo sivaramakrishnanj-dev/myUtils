@@ -23,6 +23,7 @@ object PrefsKeys {
     val PROMPT_TODO = stringPreferencesKey("prompt_todo")
     val PROMPT_JOURNAL = stringPreferencesKey("prompt_journal")
     val PROMPT_IDEA = stringPreferencesKey("prompt_idea")
+    val PROMPT_APPOINTMENT = stringPreferencesKey("prompt_appointment")
 }
 
 @Serializable
@@ -57,6 +58,15 @@ object DefaultPrompts {
         Fix grammar and spelling errors while preserving the original meaning. Make it
         clear and concise. Do NOT add commentary — output the cleaned-up idea only.
     """.trimIndent()
+
+    val APPOINTMENT = """
+        You are an AI assistant that extracts appointment details from voice-transcribed
+        text. Output ONLY a JSON object with these fields:
+        {"title": "...", "notes": "...", "startHour": H, "startMin": M, "endHour": H, "endMin": M}
+        Hours are 0-23 (24h format). If no end time is mentioned, default to startHour+1.
+        If no notes are mentioned, use an empty string. Do NOT add commentary or
+        explanation — output only the JSON object.
+    """.trimIndent()
 }
 
 data class AwsConfig(
@@ -69,6 +79,7 @@ data class AwsConfig(
     val promptTodo: String = DefaultPrompts.TODO,
     val promptJournal: String = DefaultPrompts.JOURNAL,
     val promptIdea: String = DefaultPrompts.IDEA,
+    val promptAppointment: String = DefaultPrompts.APPOINTMENT,
 ) {
     val isConfigured: Boolean
         get() = accessKey.isNotBlank() && secretKey.isNotBlank()
@@ -93,6 +104,7 @@ class AppSettings(private val context: Context) {
             promptTodo = prefs[PrefsKeys.PROMPT_TODO] ?: DefaultPrompts.TODO,
             promptJournal = prefs[PrefsKeys.PROMPT_JOURNAL] ?: DefaultPrompts.JOURNAL,
             promptIdea = prefs[PrefsKeys.PROMPT_IDEA] ?: DefaultPrompts.IDEA,
+            promptAppointment = prefs[PrefsKeys.PROMPT_APPOINTMENT] ?: DefaultPrompts.APPOINTMENT,
         )
     }
 
@@ -107,6 +119,7 @@ class AppSettings(private val context: Context) {
             prefs[PrefsKeys.PROMPT_TODO] = config.promptTodo
             prefs[PrefsKeys.PROMPT_JOURNAL] = config.promptJournal
             prefs[PrefsKeys.PROMPT_IDEA] = config.promptIdea
+            prefs[PrefsKeys.PROMPT_APPOINTMENT] = config.promptAppointment
         }
     }
 }

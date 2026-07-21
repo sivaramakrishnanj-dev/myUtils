@@ -70,6 +70,7 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
     var promptTodo by remember(config) { mutableStateOf(config.promptTodo) }
     var promptJournal by remember(config) { mutableStateOf(config.promptJournal) }
     var promptIdea by remember(config) { mutableStateOf(config.promptIdea) }
+    var promptAppointment by remember(config) { mutableStateOf(config.promptAppointment) }
 
     var modelExpanded by remember { mutableStateOf(false) }
     var showAddModel by remember { mutableStateOf(false) }
@@ -90,6 +91,7 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 promptTodo = promptTodo,
                 promptJournal = promptJournal,
                 promptIdea = promptIdea,
+                promptAppointment = promptAppointment,
             )
         )
     }
@@ -207,6 +209,13 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 value = promptIdea,
                 onValueChange = { promptIdea = it },
                 label = { Text("Idea prompt") },
+                minLines = 3,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = promptAppointment,
+                onValueChange = { promptAppointment = it },
+                label = { Text("Appointment extraction prompt") },
                 minLines = 3,
                 modifier = Modifier.fillMaxWidth(),
             )

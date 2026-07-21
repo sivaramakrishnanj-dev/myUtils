@@ -17,7 +17,7 @@ sealed interface EnrichResult {
     data class Failure(val error: String) : EnrichResult
 }
 
-enum class ContentType { TODO, JOURNAL, IDEA }
+enum class ContentType { TODO, JOURNAL, IDEA, APPOINTMENT }
 
 class BedrockEnricher(private val config: AwsConfig) {
 
@@ -34,6 +34,7 @@ class BedrockEnricher(private val config: AwsConfig) {
                 ContentType.TODO -> config.promptTodo
                 ContentType.JOURNAL -> config.promptJournal
                 ContentType.IDEA -> config.promptIdea
+                ContentType.APPOINTMENT -> config.promptAppointment
             }
             client.use { bedrock ->
                 val response = bedrock.converse(ConverseRequest {

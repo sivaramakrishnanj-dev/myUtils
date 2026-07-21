@@ -92,6 +92,28 @@ data class Habit(
 )
 
 /**
+ * A time-blocked event on a single day's schedule. [epochDay] is
+ * LocalDate.toEpochDay() for the day the appointment belongs to;
+ * [startMinutes]/[endMinutes] are minutes since midnight (0..1439).
+ */
+@Entity(
+    tableName = "appointments",
+    indices = [Index("epochDay")],
+)
+data class Appointment(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val title: String,
+    val notes: String = "",
+    val epochDay: Long,
+    val startMinutes: Int,
+    val endMinutes: Int,
+    val rawTranscript: String? = null,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deleted: Boolean = false,
+)
+
+/**
  * One row per habit per day. [epochDay] is LocalDate.toEpochDay() in the
  * user's local timezone at the moment of check-in; streaks are computed from
  * these values, never stored.
