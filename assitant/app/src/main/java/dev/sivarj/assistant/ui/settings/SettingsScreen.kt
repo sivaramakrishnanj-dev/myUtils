@@ -31,7 +31,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -42,7 +44,9 @@ import androidx.lifecycle.viewModelScope
 import dev.sivarj.assistant.settings.AppSettings
 import dev.sivarj.assistant.settings.AwsConfig
 import dev.sivarj.assistant.settings.BedrockModel
+import dev.sivarj.assistant.sync.BackupManager
 import dev.sivarj.assistant.sync.SyncScheduler
+import kotlinx.coroutines.launch
 import dev.sivarj.assistant.ui.appSettingsViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -74,7 +78,37 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
 
     var modelExpanded by remember { mutableStateOf(false) }
     var showAddModel by remember { mutableStateOf(false) }
+    var backupStatus by remember { mutableStateOf("") }
     val context = LocalContext.current
+    val app = context.applicationContext as dev.sivarj.assistant.AssistantApp
+    val backupScope = rememberCoroutineScope()
+    val backupManager = remember { BackupManager(context, app.database) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri != null) {
+            backupScope.launch {
+                backupManager.exportToUri(uri).fold(
+                    onSuccess = { backupStatus = "Exported $it items" },
+                    onFailure = { backupStatus = "Export failed: ${it.message}" },
+                )
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            backupScope.launch {
+                backupManager.importFromUri(uri).fold(
+                    onSuccess = { backupStatus = "Imported $it items" },
+                    onFailure = { backupStatus = "Import failed: ${it.message}" },
+                )
+            }
+        }
+    }
 
     val allModels = config.allModels
     val modelLabel = allModels.find { it.id == modelId }?.name ?: modelId
@@ -219,6 +253,28 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 minLines = 3,
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+
+            // --- Backup (zip + system picker → Google Drive) ---
+            Text("Backup", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "Export a zip of all your data, or import one to restore. " +
+                    "The system file picker lets you save directly to Google Drive.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(onClick = { exportLauncher.launch("assistant-backup.zip") }) {
+                    Text("Export backup")
+                }
+                TextButton(onClick = { importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }) {
+                    Text("Import backup")
+                }
+            }
+            if (backupStatus.isNotBlank()) {
+                Text(backupStatus, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            }
 
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
 
