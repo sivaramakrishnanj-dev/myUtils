@@ -35,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.Alignment
+import android.content.Context
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -45,12 +46,40 @@ import dev.sivarj.assistant.settings.AppSettings
 import dev.sivarj.assistant.settings.AwsConfig
 import dev.sivarj.assistant.settings.BedrockModel
 import dev.sivarj.assistant.sync.BackupManager
-import dev.sivarj.assistant.sync.SyncScheduler
 import kotlinx.coroutines.launch
 import dev.sivarj.assistant.ui.appSettingsViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+/**
+ * Writes the backup zip to the app's cache dir and opens the system Share sheet.
+ * This always shows Google Drive, email, messaging, etc. as targets — unlike
+ * CreateDocument which only shows file-storage providers.
+ */
+private suspend fun shareBackup(
+    context: Context,
+    backupManager: BackupManager,
+    onStatus: (String) -> Unit,
+) {
+    val cacheFile = java.io.File(context.cacheDir, "assistant-backup.zip")
+    val uri = androidx.core.content.FileProvider.getUriForFile(
+        context, "${context.packageName}.fileprovider", cacheFile,
+    )
+    val result = backupManager.exportToUri(uri)
+    result.fold(
+        onSuccess = { count ->
+            onStatus("Exported $count items — opening share…")
+            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "application/zip"
+                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(android.content.Intent.createChooser(intent, "Share backup"))
+        },
+        onFailure = { onStatus("Export failed: ${it.message}") },
+    )
+}
 
 class SettingsViewModel(private val settings: AppSettings) : ViewModel() {
     val config = settings.awsConfig
@@ -69,7 +98,6 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
     var secretKey by remember(config) { mutableStateOf(config.secretKey) }
     var region by remember(config) { mutableStateOf(config.region) }
     var modelId by remember(config) { mutableStateOf(config.bedrockModelId) }
-    var s3Bucket by remember(config) { mutableStateOf(config.s3Bucket) }
     var customModels by remember(config) { mutableStateOf(config.customModels) }
     var promptTodo by remember(config) { mutableStateOf(config.promptTodo) }
     var promptJournal by remember(config) { mutableStateOf(config.promptJournal) }
@@ -120,7 +148,6 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 secretKey = secretKey.trim(),
                 region = region.trim().ifBlank { "us-east-1" },
                 bedrockModelId = modelId,
-                s3Bucket = s3Bucket.trim(),
                 customModels = customModels,
                 promptTodo = promptTodo,
                 promptJournal = promptJournal,
@@ -259,38 +286,28 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
             // --- Backup (zip + system picker → Google Drive) ---
             Text("Backup", style = MaterialTheme.typography.titleSmall)
             Text(
-                "Export a zip of all your data, or import one to restore. " +
-                    "The system file picker lets you save directly to Google Drive.",
+                "Export creates a zip of all your data. Use \"Share\" to send it " +
+                    "to Google Drive, or \"Save to file\" to pick a folder. " +
+                    "Import restores from a zip.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = {
+                    backupScope.launch {
+                        shareBackup(context, backupManager) { backupStatus = it }
+                    }
+                }) { Text("Share") }
                 TextButton(onClick = { exportLauncher.launch("assistant-backup.zip") }) {
-                    Text("Export backup")
+                    Text("Save to file")
                 }
                 TextButton(onClick = { importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }) {
-                    Text("Import backup")
+                    Text("Import")
                 }
             }
             if (backupStatus.isNotBlank()) {
                 Text(backupStatus, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }
-
-            HorizontalDivider(Modifier.padding(vertical = 4.dp))
-
-            // --- S3 Sync ---
-            Text("S3 Sync", style = MaterialTheme.typography.titleSmall)
-            OutlinedTextField(
-                value = s3Bucket,
-                onValueChange = { s3Bucket = it },
-                label = { Text("Bucket name") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            TextButton(
-                onClick = { SyncScheduler.syncNow(context) },
-                enabled = s3Bucket.isNotBlank() && accessKey.isNotBlank(),
-            ) { Text("Sync now") }
 
             // --- Save ---
             Row(Modifier.fillMaxWidth().padding(bottom = 24.dp), horizontalArrangement = Arrangement.End) {
