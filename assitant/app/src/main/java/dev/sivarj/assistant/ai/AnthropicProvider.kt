@@ -1,7 +1,7 @@
 package dev.sivarj.assistant.ai
 
 import android.util.Log
-import dev.sivarj.assistant.settings.AwsConfig
+import dev.sivarj.assistant.settings.AppConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -18,12 +18,12 @@ import java.util.concurrent.TimeUnit
  * Claude via the Anthropic Messages API (https://api.anthropic.com/v1/messages).
  * No SDK needed — plain OkHttp request.
  */
-class AnthropicProvider(private val config: AwsConfig) : LlmProvider {
+class AnthropicProvider(private val config: AppConfig) : LlmProvider {
 
     override val name = "Anthropic API"
 
     override val isConfigured: Boolean
-        get() = config.anthropicApiKey.isNotBlank()
+        get() = config.apiKey.isNotBlank()
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -34,13 +34,13 @@ class AnthropicProvider(private val config: AwsConfig) : LlmProvider {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     override suspend fun complete(systemPrompt: String, userText: String): EnrichResult {
-        if (!isConfigured) return EnrichResult.Failure("Anthropic API key not configured")
+        if (!isConfigured) return EnrichResult.Failure("API key not configured")
         if (userText.isBlank()) return EnrichResult.Failure("Nothing to enrich")
 
         return try {
             val body = json.encodeToString(
                 ApiRequest(
-                    model = config.anthropicModelId,
+                    model = config.modelId,
                     max_tokens = 2048,
                     system = systemPrompt,
                     messages = listOf(ApiMessage(role = "user", content = userText)),
@@ -48,7 +48,7 @@ class AnthropicProvider(private val config: AwsConfig) : LlmProvider {
             )
             val request = Request.Builder()
                 .url("https://api.anthropic.com/v1/messages")
-                .header("x-api-key", config.anthropicApiKey)
+                .header("x-api-key", config.apiKey)
                 .header("anthropic-version", "2023-06-01")
                 .header("content-type", "application/json")
                 .post(body.toRequestBody("application/json".toMediaType()))

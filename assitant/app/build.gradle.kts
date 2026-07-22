@@ -33,9 +33,6 @@ android {
     buildFeatures {
         compose = true
     }
-    packaging {
-        resources.excludes += setOf("META-INF/INDEX.LIST", "META-INF/io.netty.versions.properties")
-    }
 }
 
 dependencies {
@@ -55,7 +52,6 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.aws.bedrockruntime)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
