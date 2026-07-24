@@ -23,9 +23,15 @@ android {
         }
         externalNativeBuild {
             cmake {
-                // O3 + fp16 vector arithmetic for the whisper hot loops.
-                cppFlags += listOf("-O3")
-                arguments += listOf("-DANDROID_ARM_NEON=ON")
+                // Whisper at -O0 is 10-50x slower than real-time, so force an
+                // optimized native build even for the app's debug variant, and
+                // enable fp16 vector arithmetic (huge ggml speedup on modern ARM).
+                arguments += listOf(
+                    "-DANDROID_ARM_NEON=ON",
+                    "-DCMAKE_BUILD_TYPE=Release",
+                )
+                cFlags += listOf("-O3", "-march=armv8.2-a+fp16")
+                cppFlags += listOf("-O3", "-march=armv8.2-a+fp16")
             }
         }
     }
