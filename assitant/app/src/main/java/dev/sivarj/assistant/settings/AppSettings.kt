@@ -21,6 +21,13 @@ object PrefsKeys {
     val PROMPT_JOURNAL = stringPreferencesKey("prompt_journal")
     val PROMPT_IDEA = stringPreferencesKey("prompt_idea")
     val PROMPT_APPOINTMENT = stringPreferencesKey("prompt_appointment")
+    val VOICE_ENGINE = stringPreferencesKey("voice_engine")
+    val WHISPER_MODEL_FILE = stringPreferencesKey("whisper_model_file")
+}
+
+enum class VoiceEngine(val displayName: String) {
+    SYSTEM("Android (live)"),
+    WHISPER("Whisper (on-device, record then transcribe)"),
 }
 
 @Serializable
@@ -76,6 +83,8 @@ data class AppConfig(
     val promptJournal: String = DefaultPrompts.JOURNAL,
     val promptIdea: String = DefaultPrompts.IDEA,
     val promptAppointment: String = DefaultPrompts.APPOINTMENT,
+    val voiceEngine: VoiceEngine = VoiceEngine.SYSTEM,
+    val whisperModelFile: String = "",
 ) {
     val isConfigured: Boolean get() = apiKey.isNotBlank()
 
@@ -96,6 +105,10 @@ class AppSettings(private val context: Context) {
             promptJournal = prefs[PrefsKeys.PROMPT_JOURNAL] ?: DefaultPrompts.JOURNAL,
             promptIdea = prefs[PrefsKeys.PROMPT_IDEA] ?: DefaultPrompts.IDEA,
             promptAppointment = prefs[PrefsKeys.PROMPT_APPOINTMENT] ?: DefaultPrompts.APPOINTMENT,
+            voiceEngine = prefs[PrefsKeys.VOICE_ENGINE]?.let {
+                runCatching { VoiceEngine.valueOf(it) }.getOrNull()
+            } ?: VoiceEngine.SYSTEM,
+            whisperModelFile = prefs[PrefsKeys.WHISPER_MODEL_FILE] ?: "",
         )
     }
 
@@ -108,6 +121,8 @@ class AppSettings(private val context: Context) {
             prefs[PrefsKeys.PROMPT_JOURNAL] = config.promptJournal
             prefs[PrefsKeys.PROMPT_IDEA] = config.promptIdea
             prefs[PrefsKeys.PROMPT_APPOINTMENT] = config.promptAppointment
+            prefs[PrefsKeys.VOICE_ENGINE] = config.voiceEngine.name
+            prefs[PrefsKeys.WHISPER_MODEL_FILE] = config.whisperModelFile
         }
     }
 }

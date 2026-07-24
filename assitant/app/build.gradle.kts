@@ -16,6 +16,25 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1"
+
+        ndk {
+            // Modern phones only; skips x86 and 32-bit ARM native builds.
+            abiFilters += listOf("arm64-v8a")
+        }
+        externalNativeBuild {
+            cmake {
+                // O3 + fp16 vector arithmetic for the whisper hot loops.
+                cppFlags += listOf("-O3")
+                arguments += listOf("-DANDROID_ARM_NEON=ON")
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     buildTypes {

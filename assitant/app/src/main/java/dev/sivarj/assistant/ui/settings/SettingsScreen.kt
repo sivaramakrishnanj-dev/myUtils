@@ -45,6 +45,9 @@ import androidx.lifecycle.viewModelScope
 import dev.sivarj.assistant.settings.AppConfig
 import dev.sivarj.assistant.settings.AppSettings
 import dev.sivarj.assistant.settings.LlmModel
+import dev.sivarj.assistant.settings.VoiceEngine
+import dev.sivarj.assistant.speech.WHISPER_MODELS
+import dev.sivarj.assistant.speech.WhisperModelManager
 import dev.sivarj.assistant.sync.BackupManager
 import dev.sivarj.assistant.ui.appSettingsViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -95,6 +98,8 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
     var promptJournal by remember(config) { mutableStateOf(config.promptJournal) }
     var promptIdea by remember(config) { mutableStateOf(config.promptIdea) }
     var promptAppointment by remember(config) { mutableStateOf(config.promptAppointment) }
+    var voiceEngine by remember(config) { mutableStateOf(config.voiceEngine) }
+    var whisperModelFile by remember(config) { mutableStateOf(config.whisperModelFile) }
 
     var modelExpanded by remember { mutableStateOf(false) }
     var showAddModel by remember { mutableStateOf(false) }
@@ -137,6 +142,8 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
             promptJournal = promptJournal,
             promptIdea = promptIdea,
             promptAppointment = promptAppointment,
+            voiceEngine = voiceEngine,
+            whisperModelFile = whisperModelFile,
         ))
     }
 
@@ -217,6 +224,78 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 label = { Text("Idea prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = promptAppointment, onValueChange = { promptAppointment = it },
                 label = { Text("Appointment extraction prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
+
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+
+            // --- Voice Engine ---
+            Text("Voice Input", style = MaterialTheme.typography.titleSmall)
+            VoiceEngine.entries.forEach { engine ->
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    androidx.compose.material3.RadioButton(
+                        selected = voiceEngine == engine,
+                        onClick = { voiceEngine = engine },
+                    )
+                    Text(engine.displayName, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            if (voiceEngine == VoiceEngine.WHISPER) {
+                val whisperManager = remember { WhisperModelManager(context) }
+                var downloadProgress by remember { mutableStateOf<Int?>(null) }
+                var downloadingModel by remember { mutableStateOf<String?>(null) }
+                var refresh by remember { mutableStateOf(0) }
+
+                WHISPER_MODELS.forEach { model ->
+                    val downloaded = remember(refresh) { whisperManager.isDownloaded(model) }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.RadioButton(
+                            selected = whisperModelFile == model.fileName,
+                            onClick = { if (downloaded) whisperModelFile = model.fileName },
+                            enabled = downloaded,
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text(model.displayName, style = MaterialTheme.typography.bodyMedium)
+                            if (downloadingModel == model.fileName && downloadProgress != null) {
+                                Text("Downloading… $downloadProgress%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary)
+                            } else if (!downloaded) {
+                                Text("Not downloaded",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        if (downloaded) {
+                            IconButton(onClick = {
+                                whisperManager.delete(model)
+                                if (whisperModelFile == model.fileName) whisperModelFile = ""
+                                refresh++
+                            }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete model",
+                                    tint = MaterialTheme.colorScheme.error)
+                            }
+                        } else if (downloadingModel != model.fileName) {
+                            TextButton(onClick = {
+                                downloadingModel = model.fileName
+                                downloadProgress = 0
+                                scope.launch {
+                                    whisperManager.download(model) { downloadProgress = it }.fold(
+                                        onSuccess = {
+                                            whisperModelFile = model.fileName
+                                            refresh++
+                                        },
+                                        onFailure = { backupStatus = "Model download failed: ${it.message}" },
+                                    )
+                                    downloadingModel = null
+                                    downloadProgress = null
+                                }
+                            }) { Text("Download") }
+                        }
+                    }
+                }
+            }
 
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
 
