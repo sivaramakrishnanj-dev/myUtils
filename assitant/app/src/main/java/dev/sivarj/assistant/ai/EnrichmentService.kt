@@ -25,4 +25,15 @@ class EnrichmentService(private val context: Context) {
             }
             provider.complete(systemPrompt, rawText)
         }
+
+    /** Habit motivation: sends real streak stats with the editable coach prompt. */
+    suspend fun motivate(statsText: String): EnrichResult =
+        withContext(Dispatchers.IO) {
+            val config = settings.config.first()
+            val provider = AnthropicProvider(config)
+            if (!provider.isConfigured) {
+                return@withContext EnrichResult.Failure("API key not configured — go to Settings")
+            }
+            provider.complete(config.promptMotivation, statsText)
+        }
 }

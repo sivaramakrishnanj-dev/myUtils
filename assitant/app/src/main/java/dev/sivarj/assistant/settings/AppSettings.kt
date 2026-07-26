@@ -21,6 +21,7 @@ object PrefsKeys {
     val PROMPT_JOURNAL = stringPreferencesKey("prompt_journal")
     val PROMPT_IDEA = stringPreferencesKey("prompt_idea")
     val PROMPT_APPOINTMENT = stringPreferencesKey("prompt_appointment")
+    val PROMPT_MOTIVATION = stringPreferencesKey("prompt_motivation")
     val VOICE_ENGINE = stringPreferencesKey("voice_engine")
     val WHISPER_MODEL_FILE = stringPreferencesKey("whisper_model_file")
 }
@@ -73,6 +74,20 @@ object DefaultPrompts {
         If no notes are mentioned, use an empty string. Do NOT add commentary or
         explanation — output only the JSON object.
     """.trimIndent()
+
+    val MOTIVATION = """
+        You are a supportive habit coach. You will receive a habit's name and its real
+        statistics (current streak, longest streak, history of past streak lengths,
+        total check-ins). Write a short motivational message (2-4 sentences) that:
+        - references the user's actual numbers,
+        - relates them to what research says about habit formation (e.g. how many days
+          habits typically take to become automatic, how rare persistence is),
+        - if the current streak is strong, celebrates it and names the next milestone;
+        - if a streak was recently broken but past streaks are growing, points out the
+          improving trend and encourages restarting.
+        Be warm, concrete, and personal. Do NOT use bullet points — output plain prose
+        only, no preamble.
+    """.trimIndent()
 }
 
 data class AppConfig(
@@ -83,6 +98,7 @@ data class AppConfig(
     val promptJournal: String = DefaultPrompts.JOURNAL,
     val promptIdea: String = DefaultPrompts.IDEA,
     val promptAppointment: String = DefaultPrompts.APPOINTMENT,
+    val promptMotivation: String = DefaultPrompts.MOTIVATION,
     val voiceEngine: VoiceEngine = VoiceEngine.SYSTEM,
     val whisperModelFile: String = "",
 ) {
@@ -105,6 +121,7 @@ class AppSettings(private val context: Context) {
             promptJournal = prefs[PrefsKeys.PROMPT_JOURNAL] ?: DefaultPrompts.JOURNAL,
             promptIdea = prefs[PrefsKeys.PROMPT_IDEA] ?: DefaultPrompts.IDEA,
             promptAppointment = prefs[PrefsKeys.PROMPT_APPOINTMENT] ?: DefaultPrompts.APPOINTMENT,
+            promptMotivation = prefs[PrefsKeys.PROMPT_MOTIVATION] ?: DefaultPrompts.MOTIVATION,
             voiceEngine = prefs[PrefsKeys.VOICE_ENGINE]?.let {
                 runCatching { VoiceEngine.valueOf(it) }.getOrNull()
             } ?: VoiceEngine.SYSTEM,
@@ -121,6 +138,7 @@ class AppSettings(private val context: Context) {
             prefs[PrefsKeys.PROMPT_JOURNAL] = config.promptJournal
             prefs[PrefsKeys.PROMPT_IDEA] = config.promptIdea
             prefs[PrefsKeys.PROMPT_APPOINTMENT] = config.promptAppointment
+            prefs[PrefsKeys.PROMPT_MOTIVATION] = config.promptMotivation
             prefs[PrefsKeys.VOICE_ENGINE] = config.voiceEngine.name
             prefs[PrefsKeys.WHISPER_MODEL_FILE] = config.whisperModelFile
         }

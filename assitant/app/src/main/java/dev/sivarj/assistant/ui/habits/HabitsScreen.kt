@@ -23,6 +23,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -52,7 +53,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-data class HabitWithStreak(val habit: Habit, val streak: StreakResult)
+data class HabitWithStreak(
+    val habit: Habit,
+    val streak: StreakResult,
+    /** All checked epoch-days for this habit, for the detail view. */
+    val checkinDays: Set<Long>,
+)
 
 class HabitsViewModel(private val db: AppDatabase) : ViewModel() {
 
@@ -64,7 +70,7 @@ class HabitsViewModel(private val db: AppDatabase) : ViewModel() {
         val byHabit = checkins.groupBy { it.habitId }
         habits.map { habit ->
             val days = byHabit[habit.id]?.map { it.epochDay } ?: emptyList()
-            HabitWithStreak(habit, computeStreak(days, today))
+            HabitWithStreak(habit, computeStreak(days, today), days.toSet())
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -76,13 +82,16 @@ class HabitsViewModel(private val db: AppDatabase) : ViewModel() {
         viewModelScope.launch { db.habitDao().softDelete(habit.id) }
     }
 
-    fun toggleToday(item: HabitWithStreak) {
-        val today = LocalDate.now().toEpochDay()
+    fun toggleToday(item: HabitWithStreak) = toggleDay(item, LocalDate.now().toEpochDay())
+
+    /** Toggles a check-in on any day (used by the detail sheet for backfill). */
+    fun toggleDay(item: HabitWithStreak, epochDay: Long) {
+        if (epochDay > LocalDate.now().toEpochDay()) return // never the future
         viewModelScope.launch {
-            if (item.streak.checkedToday) {
-                db.habitDao().deleteCheckin(item.habit.id, today)
+            if (epochDay in item.checkinDays) {
+                db.habitDao().deleteCheckin(item.habit.id, epochDay)
             } else {
-                db.habitDao().insertCheckin(HabitCheckin(habitId = item.habit.id, epochDay = today))
+                db.habitDao().insertCheckin(HabitCheckin(habitId = item.habit.id, epochDay = epochDay))
             }
         }
     }
@@ -93,6 +102,7 @@ class HabitsViewModel(private val db: AppDatabase) : ViewModel() {
 fun HabitsScreen(vm: HabitsViewModel = appViewModel()) {
     val items by vm.habitsWithStreaks.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
+    var detailHabitId by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Habits") }) },
@@ -117,9 +127,22 @@ fun HabitsScreen(vm: HabitsViewModel = appViewModel()) {
                         item = item,
                         onToggleToday = { vm.toggleToday(item) },
                         onDelete = { vm.deleteHabit(item.habit) },
+                        onOpen = { detailHabitId = item.habit.id },
                     )
                 }
             }
+        }
+    }
+
+    // Detail sheet — resolves the live item each recomposition so grid taps
+    // update immediately as the DB flow re-emits.
+    val detailItem = items.find { it.habit.id == detailHabitId }
+    if (detailItem != null) {
+        ModalBottomSheet(onDismissRequest = { detailHabitId = null }) {
+            HabitDetailContent(
+                item = detailItem,
+                onToggleDay = { day -> vm.toggleDay(detailItem, day) },
+            )
         }
     }
 
@@ -156,8 +179,9 @@ private fun HabitRow(
     item: HabitWithStreak,
     onToggleToday: () -> Unit,
     onDelete: () -> Unit,
+    onOpen: () -> Unit,
 ) {
-    Card {
+    Card(onClick = onOpen) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,

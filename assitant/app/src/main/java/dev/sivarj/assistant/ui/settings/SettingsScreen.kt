@@ -98,6 +98,7 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
     var promptJournal by remember(config) { mutableStateOf(config.promptJournal) }
     var promptIdea by remember(config) { mutableStateOf(config.promptIdea) }
     var promptAppointment by remember(config) { mutableStateOf(config.promptAppointment) }
+    var promptMotivation by remember(config) { mutableStateOf(config.promptMotivation) }
     var voiceEngine by remember(config) { mutableStateOf(config.voiceEngine) }
     var whisperModelFile by remember(config) { mutableStateOf(config.whisperModelFile) }
 
@@ -142,6 +143,7 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
             promptJournal = promptJournal,
             promptIdea = promptIdea,
             promptAppointment = promptAppointment,
+            promptMotivation = promptMotivation,
             voiceEngine = voiceEngine,
             whisperModelFile = whisperModelFile,
         ))
@@ -224,6 +226,8 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 label = { Text("Idea prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = promptAppointment, onValueChange = { promptAppointment = it },
                 label = { Text("Appointment extraction prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = promptMotivation, onValueChange = { promptMotivation = it },
+                label = { Text("Habit motivation prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
 
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
 
