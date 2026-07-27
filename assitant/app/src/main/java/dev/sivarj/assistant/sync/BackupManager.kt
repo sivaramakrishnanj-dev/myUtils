@@ -51,7 +51,8 @@ data class BackupIdea(
 
 @Serializable
 data class BackupHabit(
-    val id: String, val name: String, val archived: Boolean = false,
+    val id: String, val name: String, val description: String = "",
+    val archived: Boolean = false,
     val createdAt: Long, val updatedAt: Long, val deleted: Boolean = false,
 )
 
@@ -130,7 +131,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             val habits = db.habitDao().observeAll().first()
             zip.putNextEntry(ZipEntry("habits.json"))
             zip.write(json.encodeToString(habits.map { h ->
-                BackupHabit(h.id, h.name, h.archived, h.createdAt, h.updatedAt, h.deleted)
+                BackupHabit(h.id, h.name, h.description, h.archived, h.createdAt, h.updatedAt, h.deleted)
             }).toByteArray())
             zip.closeEntry()
             count += habits.size
@@ -232,7 +233,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             val items = json.decodeFromString<List<BackupHabit>>(String(bytes))
             items.forEach { h ->
                 db.habitDao().upsert(Habit(
-                    id = h.id, name = h.name, archived = h.archived,
+                    id = h.id, name = h.name, description = h.description, archived = h.archived,
                     createdAt = h.createdAt, updatedAt = h.updatedAt, deleted = h.deleted,
                 ))
             }

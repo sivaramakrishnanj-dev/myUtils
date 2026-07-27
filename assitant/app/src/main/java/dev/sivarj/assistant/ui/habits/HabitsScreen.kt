@@ -74,8 +74,16 @@ class HabitsViewModel(private val db: AppDatabase) : ViewModel() {
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun addHabit(name: String) {
-        viewModelScope.launch { db.habitDao().upsert(Habit(name = name)) }
+    fun addHabit(name: String, description: String) {
+        viewModelScope.launch { db.habitDao().upsert(Habit(name = name, description = description)) }
+    }
+
+    fun updateDescription(habit: Habit, description: String) {
+        viewModelScope.launch {
+            db.habitDao().upsert(
+                habit.copy(description = description, updatedAt = System.currentTimeMillis())
+            )
+        }
     }
 
     fun deleteHabit(habit: Habit) {
@@ -142,29 +150,41 @@ fun HabitsScreen(vm: HabitsViewModel = appViewModel()) {
             HabitDetailContent(
                 item = detailItem,
                 onToggleDay = { day -> vm.toggleDay(detailItem, day) },
+                onDescriptionChange = { vm.updateDescription(detailItem.habit, it) },
             )
         }
     }
 
     if (showAdd) {
         var name by remember { mutableStateOf("") }
+        var description by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showAdd = false },
             title = { Text("New habit") },
             text = {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Habit name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Habit name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("What & why (helps AI motivate you)") },
+                        placeholder = { Text("e.g. Soak seeds at night, eat in the morning for a healthy diet") },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
                     enabled = name.isNotBlank(),
                     onClick = {
-                        vm.addHabit(name.trim())
+                        vm.addHabit(name.trim(), description.trim())
                         showAdd = false
                     },
                 ) { Text("Create") }

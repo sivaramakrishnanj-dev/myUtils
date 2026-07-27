@@ -62,10 +62,12 @@ private const val GRID_WEEKS = 8
 fun HabitDetailContent(
     item: HabitWithStreak,
     onToggleDay: (Long) -> Unit,
+    onDescriptionChange: (String) -> Unit,
 ) {
     val today = LocalDate.now().toEpochDay()
     var motivation by remember { mutableStateOf<String?>(null) }
     var motivating by remember { mutableStateOf(false) }
+    var description by remember(item.habit.id) { mutableStateOf(item.habit.description) }
     val scope = rememberCoroutineScope()
     val app = LocalContext.current.applicationContext as AssistantApp
 
@@ -82,6 +84,17 @@ fun HabitDetailContent(
                 "${item.checkinDays.size} total check-ins",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        androidx.compose.material3.OutlinedTextField(
+            value = description,
+            onValueChange = {
+                description = it
+                onDescriptionChange(it)
+            },
+            label = { Text("What & why (helps AI motivate you)") },
+            minLines = 2,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         // --- Trend chart ---
@@ -111,6 +124,9 @@ fun HabitDetailContent(
                     val history = streakHistory(item.checkinDays)
                     val stats = buildString {
                         appendLine("Habit: ${item.habit.name}")
+                        if (description.isNotBlank()) {
+                            appendLine("What this habit is about: $description")
+                        }
                         appendLine("Current streak: ${item.streak.current} days")
                         appendLine("Longest streak ever: ${item.streak.longest} days")
                         appendLine("Total check-ins: ${item.checkinDays.size}")

@@ -85,6 +85,8 @@ data class Idea(
 data class Habit(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val name: String,
+    /** What the habit really is and why — context for the LLM motivator. */
+    val description: String = "",
     val archived: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
