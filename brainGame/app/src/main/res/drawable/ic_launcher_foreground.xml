@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Lightbulb glyph centered in the adaptive-icon safe zone -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,30 C45.7,30 39,36.7 39,45 C39,50.4 41.6,55.1 45.5,58 L45.5,64 L62.5,64 L62.5,58 C66.4,55.1 69,50.4 69,45 C69,36.7 62.3,30 54,30 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M46,68 L62,68 L62,72 L46,72 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M48.5,76 L59.5,76 L57,80 L51,80 Z" />
+</vector>

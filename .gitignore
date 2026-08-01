@@ -1,0 +1,45 @@
+# Build output
+target/
+build/
+*.class
+*.jar
+dependency-reduced-pom.xml
+
+# IDE — IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# IDE — Eclipse / m2e
+.project
+.classpath
+.settings/
+.apt_generated/
+.factorypath
+
+# IDE — VS Code
+.vscode/
+
+# Claude Code local config
+.claude/*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Obsidian vault
+.obsidian/
+
+# Test / tooling state
+.jqwik-database
+
+# Downloaded media / transcript artifacts (test runs, manual invocations)
+*.mp4
+*.m4a
+*.mp3
+*.webm
+*.srt
+*.txt
+*.jpg
+*.part
