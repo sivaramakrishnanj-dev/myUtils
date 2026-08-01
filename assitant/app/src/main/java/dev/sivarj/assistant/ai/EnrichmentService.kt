@@ -36,4 +36,37 @@ class EnrichmentService(private val context: Context) {
             }
             provider.complete(config.promptMotivation, statsText)
         }
+
+    /**
+     * Proposes a short title for already-polished note text. Kept as its own
+     * call with a fixed prompt so titles work no matter how the user has
+     * customized their note-polish prompt.
+     */
+    suspend fun suggestTitle(noteText: String): String? =
+        withContext(Dispatchers.IO) {
+            if (noteText.isBlank()) return@withContext null
+            val config = settings.config.first()
+            val provider = AnthropicProvider(config)
+            if (!provider.isConfigured) return@withContext null
+            val result = provider.complete(TITLE_PROMPT, noteText.take(4000))
+            when (result) {
+                is EnrichResult.Success -> result.text
+                    .lineSequence()
+                    .firstOrNull { it.isNotBlank() }
+                    ?.trim()
+                    // Models sometimes wrap or prefix the answer despite instructions.
+                    ?.removeSurrounding("\"")
+                    ?.removePrefix("Title:")
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() && it.length <= 80 }
+                is EnrichResult.Failure -> null
+            }
+        }
+
+    private companion object {
+        const val TITLE_PROMPT =
+            "Give a short title (3-8 words) for the note below. " +
+                "Reply with the title only — no quotes, no punctuation at the end, " +
+                "no preamble, no explanation."
+    }
 }

@@ -236,11 +236,15 @@ private fun NoteEditor(
                 scope.launch {
                     when (val result = app.enrichmentService.enrich(content, ContentType.IDEA)) {
                         is EnrichResult.Success -> {
+                            // The polish prompt is user-editable, so the response may
+                            // be {"title","body"} JSON or plain prose — handle both.
                             val polished = parseNoteJson(result.text)
                             content = polished.body
-                            // Only fill the title if the user hasn't written one.
-                            if (title.isBlank() && polished.title.isNotBlank()) {
-                                title = polished.title
+                            if (title.isBlank()) {
+                                title = polished.title.ifBlank {
+                                    // Prompt didn't supply a title; ask for one directly.
+                                    app.enrichmentService.suggestTitle(polished.body).orEmpty()
+                                }
                             }
                         }
                         is EnrichResult.Failure -> polishError = result.error
