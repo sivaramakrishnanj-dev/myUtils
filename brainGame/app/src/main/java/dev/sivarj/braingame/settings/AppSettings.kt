@@ -22,6 +22,7 @@ object PrefsKeys {
     val PROMPT_GENERATION = stringPreferencesKey("prompt_generation")
     val PROMPT_EXPLANATION = stringPreferencesKey("prompt_explanation")
     val ENABLED_THEMES = stringPreferencesKey("enabled_themes")
+    val CUSTOM_THEMES = stringPreferencesKey("custom_themes")
 }
 
 @Serializable
@@ -47,16 +48,34 @@ data class AppConfig(
     val promptGeneration: String = DefaultPrompts.GENERATION,
     val promptExplanation: String = DefaultPrompts.EXPLANATION,
     val enabledThemes: List<String> = Themes.ALL,
+    /** Themes the player added themselves, e.g. "Carnatic music" or "Kubernetes". */
+    val customThemes: List<String> = emptyList(),
 ) {
     val isConfigured: Boolean get() = apiKey.isNotBlank()
 
     val allModels: List<LlmModel>
         get() = BUILT_IN_MODELS + customModels.filter { c -> BUILT_IN_MODELS.none { it.id == c.id } }
 
-    /** Falls back to every theme rather than blocking generation on an empty selection. */
+    /** Every theme offered in Settings: the built-ins plus the player's own. */
+    val allThemes: List<String>
+        get() = Themes.ALL + customThemes.filter { it !in Themes.ALL }
+
+    /**
+     * Themes generation may actually use. Selections are intersected with the
+     * available list so a removed custom theme can't linger as an enabled one,
+     * and an empty result falls back to everything rather than blocking play.
+     */
     val effectiveThemes: List<String>
-        get() = enabledThemes.ifEmpty { Themes.ALL }
+        get() = enabledThemes.filter { it in allThemes }.ifEmpty { allThemes }
 }
+
+/**
+ * Normalizes a user-entered theme: trims, collapses inner whitespace, and caps
+ * the length. Returns null when nothing usable is left, so the caller can
+ * reject blank input without a second check.
+ */
+fun sanitizeTheme(raw: String): String? =
+    raw.trim().replace(Regex("\\s+"), " ").take(60).ifBlank { null }
 
 class AppSettings(private val context: Context) {
 
@@ -72,6 +91,9 @@ class AppSettings(private val context: Context) {
             enabledThemes = prefs[PrefsKeys.ENABLED_THEMES]?.let {
                 runCatching { json.decodeFromString<List<String>>(it) }.getOrNull()
             } ?: Themes.ALL,
+            customThemes = prefs[PrefsKeys.CUSTOM_THEMES]?.let {
+                runCatching { json.decodeFromString<List<String>>(it) }.getOrNull()
+            } ?: emptyList(),
         )
     }
 
@@ -83,6 +105,7 @@ class AppSettings(private val context: Context) {
             prefs[PrefsKeys.PROMPT_GENERATION] = config.promptGeneration
             prefs[PrefsKeys.PROMPT_EXPLANATION] = config.promptExplanation
             prefs[PrefsKeys.ENABLED_THEMES] = json.encodeToString(config.enabledThemes)
+            prefs[PrefsKeys.CUSTOM_THEMES] = json.encodeToString(config.customThemes)
         }
     }
 }

@@ -69,6 +69,13 @@ goes in the user turn, never the system prompt.
 anyway, and you are waiting); explanation runs at `high`, because that is the
 actual teaching moment.
 
+**Themes are yours to define.** Five ship as built-ins, and you can add any
+interest as free text in Settings — "Carnatic music", "Kubernetes", whatever.
+Added themes are enabled immediately and persist across restarts. Your own
+themes can be deleted; built-ins can only be toggled off, so the list can never
+be emptied. A theme is only a setting for the puzzle, never a knowledge
+requirement, so adding an obscure interest doesn't make puzzles unsolvable.
+
 ## Model and cost
 
 Defaults to `claude-opus-5`, overridable in Settings and persisted. At Opus 5
@@ -104,8 +111,10 @@ ui/         Compose screens: play, stats, settings.
 ## Status
 
 Working end to end: generation, all four answer input types, hints, resume,
-Elo updates, explanations, and stats. Verified on an API 35 emulator, including
-the API error path.
+Elo updates, explanations, stats, and custom themes. 45 unit tests cover the
+rating engine, validation, answer grading, the JSON schema contract, and theme
+config. Verified on an API 35 emulator, including the API error path and
+add/remove/persist for custom themes.
 
 Ideas not yet built: themed Sudoku and logic grids with constraint solvers
 (needs a deterministic generator, not just a validator), prefetching one puzzle
