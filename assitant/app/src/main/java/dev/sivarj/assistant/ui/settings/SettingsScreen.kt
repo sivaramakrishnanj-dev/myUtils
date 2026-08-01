@@ -223,7 +223,7 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
             OutlinedTextField(value = promptJournal, onValueChange = { promptJournal = it },
                 label = { Text("Journal prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = promptIdea, onValueChange = { promptIdea = it },
-                label = { Text("Idea prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
+                label = { Text("Note polish prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = promptAppointment, onValueChange = { promptAppointment = it },
                 label = { Text("Appointment extraction prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = promptMotivation, onValueChange = { promptMotivation = it },

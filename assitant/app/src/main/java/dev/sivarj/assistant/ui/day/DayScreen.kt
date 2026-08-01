@@ -290,6 +290,9 @@ fun DayScreen(vm: DayViewModel = appViewModel()) {
     if (showEditor) {
         ModalBottomSheet(onDismissRequest = { showEditor = false }) {
             AppointmentEditor(
+                // Reset all editor state when switching appointments (or opening
+                // a fresh one) — otherwise Compose reuses the previous values.
+                key = editing?.id ?: "new",
                 initial = editing,
                 onSave = { appt ->
                     vm.save(appt)
@@ -302,19 +305,20 @@ fun DayScreen(vm: DayViewModel = appViewModel()) {
 
 @Composable
 private fun AppointmentEditor(
+    key: String,
     initial: Appointment?,
     onSave: (Appointment) -> Unit,
 ) {
     val today = LocalDate.now().toEpochDay()
-    var title by remember { mutableStateOf(initial?.title ?: "") }
-    var notes by remember { mutableStateOf(initial?.notes ?: "") }
-    var startHour by remember { mutableIntStateOf(initial?.let { it.startMinutes / 60 } ?: 9) }
-    var startMin by remember { mutableIntStateOf(initial?.let { it.startMinutes % 60 } ?: 0) }
-    var endHour by remember { mutableIntStateOf(initial?.let { it.endMinutes / 60 } ?: 10) }
-    var endMin by remember { mutableIntStateOf(initial?.let { it.endMinutes % 60 } ?: 0) }
-    var voiceText by remember { mutableStateOf("") }
-    var extracting by remember { mutableStateOf(false) }
-    var extractError by remember { mutableStateOf<String?>(null) }
+    var title by remember(key) { mutableStateOf(initial?.title ?: "") }
+    var notes by remember(key) { mutableStateOf(initial?.notes ?: "") }
+    var startHour by remember(key) { mutableIntStateOf(initial?.let { it.startMinutes / 60 } ?: 9) }
+    var startMin by remember(key) { mutableIntStateOf(initial?.let { it.startMinutes % 60 } ?: 0) }
+    var endHour by remember(key) { mutableIntStateOf(initial?.let { it.endMinutes / 60 } ?: 10) }
+    var endMin by remember(key) { mutableIntStateOf(initial?.let { it.endMinutes % 60 } ?: 0) }
+    var voiceText by remember(key) { mutableStateOf("") }
+    var extracting by remember(key) { mutableStateOf(false) }
+    var extractError by remember(key) { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val app = LocalContext.current.applicationContext as AssistantApp
 

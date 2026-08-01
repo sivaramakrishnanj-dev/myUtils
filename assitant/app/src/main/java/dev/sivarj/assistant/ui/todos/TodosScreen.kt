@@ -160,9 +160,11 @@ private fun TodoEditor(
     onCreateCategory: (String, String?) -> Unit,
     onSave: (Todo) -> Unit,
 ) {
-    var title by remember { mutableStateOf(initial?.title ?: "") }
-    var notes by remember { mutableStateOf(initial?.notes ?: "") }
-    var categoryId by remember { mutableStateOf(initial?.categoryId) }
+    // Key on the todo id so opening a different (or new) todo resets state.
+    val stateKey = initial?.id ?: "new"
+    var title by remember(stateKey) { mutableStateOf(initial?.title ?: "") }
+    var notes by remember(stateKey) { mutableStateOf(initial?.notes ?: "") }
+    var categoryId by remember(stateKey) { mutableStateOf(initial?.categoryId) }
 
     Column(
         Modifier

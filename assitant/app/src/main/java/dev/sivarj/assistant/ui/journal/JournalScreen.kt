@@ -124,7 +124,8 @@ fun JournalScreen(vm: JournalViewModel = appViewModel()) {
 
     if (showEditor) {
         ModalBottomSheet(onDismissRequest = { showEditor = false }) {
-            var content by remember { mutableStateOf(editing?.content ?: "") }
+            // Key on the entry id so opening a different (or new) entry resets state.
+            var content by remember(editing?.id ?: "new") { mutableStateOf(editing?.content ?: "") }
             Column(
                 Modifier
                     .fillMaxWidth()

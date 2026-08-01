@@ -66,12 +66,19 @@ data class JournalEntry(
     val deleted: Boolean = false,
 )
 
+/**
+ * A note (voice-captured or typed, then LLM-polished). The table is still
+ * named "ideas" from the pre-Notes era; renaming it would cost a table
+ * rebuild for no user-visible benefit.
+ */
 @Entity(
     tableName = "ideas",
     indices = [Index("categoryId")],
 )
 data class Idea(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    /** Short heading, usually proposed by the LLM and overridable by the user. */
+    val title: String = "",
     val content: String,
     val categoryId: String? = null,
     val rawTranscript: String? = null,

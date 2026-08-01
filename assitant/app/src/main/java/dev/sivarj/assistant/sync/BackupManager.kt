@@ -44,7 +44,7 @@ data class BackupJournal(
 
 @Serializable
 data class BackupIdea(
-    val id: String, val content: String, val categoryId: String? = null,
+    val id: String, val title: String = "", val content: String, val categoryId: String? = null,
     val rawTranscript: String? = null, val enrichmentStatus: String = "NONE",
     val createdAt: Long, val updatedAt: Long, val deleted: Boolean = false,
 )
@@ -121,7 +121,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             val ideas = db.ideaDao().observeAll().first()
             zip.putNextEntry(ZipEntry("ideas.json"))
             zip.write(json.encodeToString(ideas.map { i ->
-                BackupIdea(i.id, i.content, i.categoryId, i.rawTranscript,
+                BackupIdea(i.id, i.title, i.content, i.categoryId, i.rawTranscript,
                     i.enrichmentStatus.name, i.createdAt, i.updatedAt, i.deleted)
             }).toByteArray())
             zip.closeEntry()
@@ -220,7 +220,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             val items = json.decodeFromString<List<BackupIdea>>(String(bytes))
             items.forEach { i ->
                 db.ideaDao().upsert(Idea(
-                    id = i.id, content = i.content, categoryId = i.categoryId,
+                    id = i.id, title = i.title, content = i.content, categoryId = i.categoryId,
                     rawTranscript = i.rawTranscript,
                     enrichmentStatus = EnrichmentStatus.valueOf(i.enrichmentStatus),
                     createdAt = i.createdAt, updatedAt = i.updatedAt, deleted = i.deleted,

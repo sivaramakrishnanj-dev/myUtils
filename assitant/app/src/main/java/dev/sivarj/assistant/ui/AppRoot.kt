@@ -5,7 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Checklist
-import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -34,7 +34,7 @@ private val tabs = listOf(
     Tab("day", "Day", Icons.Default.CalendarToday),
     Tab("todos", "Todos", Icons.Default.Checklist),
     Tab("journal", "Journal", Icons.AutoMirrored.Filled.MenuBook),
-    Tab("ideas", "Ideas", Icons.Default.Lightbulb),
+    Tab("ideas", "Notes", Icons.Default.Notes),
     Tab("habits", "Habits", Icons.Default.LocalFireDepartment),
     Tab("settings", "Settings", Icons.Default.Settings),
 )

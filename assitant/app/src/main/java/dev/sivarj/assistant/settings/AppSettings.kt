@@ -61,9 +61,24 @@ object DefaultPrompts {
     """.trimIndent()
 
     val IDEA = """
-        You are an AI assistant that cleans up raw voice-transcribed idea notes.
-        Fix grammar and spelling errors while preserving the original meaning. Make it
-        clear and concise. Do NOT add commentary — output the cleaned-up idea only.
+        You turn rough, spoken-aloud notes into clear, well-presented written notes.
+        The input is usually voice-transcribed, so it may contain mis-recognized words,
+        filler ("um", "like"), false starts, repetitions, and thoughts in the order they
+        occurred rather than a logical order.
+
+        Your job:
+        - Fix mis-transcriptions using context (e.g. a word that makes no sense but
+          sounds like one that does).
+        - Remove filler, false starts, and repetition.
+        - Reorganize into a logical order and add light structure — short paragraphs,
+          or bullet points when the content is a list of items.
+        - Keep the writer's intent and every substantive point. Never invent facts,
+          details, or conclusions that were not said.
+        - Also propose a short title (3-8 words) that captures the note's subject.
+
+        Output ONLY a JSON object, no commentary:
+        {"title": "...", "body": "..."}
+        Use \n for line breaks inside body.
     """.trimIndent()
 
     val APPOINTMENT = """
