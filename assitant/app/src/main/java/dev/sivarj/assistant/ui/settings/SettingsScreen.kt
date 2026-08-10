@@ -99,6 +99,7 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
     var promptIdea by remember(config) { mutableStateOf(config.promptIdea) }
     var promptAppointment by remember(config) { mutableStateOf(config.promptAppointment) }
     var promptMotivation by remember(config) { mutableStateOf(config.promptMotivation) }
+    var promptPrayer by remember(config) { mutableStateOf(config.promptPrayer) }
     var voiceEngine by remember(config) { mutableStateOf(config.voiceEngine) }
     var whisperModelFile by remember(config) { mutableStateOf(config.whisperModelFile) }
 
@@ -144,6 +145,7 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
             promptIdea = promptIdea,
             promptAppointment = promptAppointment,
             promptMotivation = promptMotivation,
+            promptPrayer = promptPrayer,
             voiceEngine = voiceEngine,
             whisperModelFile = whisperModelFile,
         ))
@@ -222,8 +224,8 @@ fun SettingsScreen(vm: SettingsViewModel = appSettingsViewModel()) {
                 label = { Text("Todo prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = promptJournal, onValueChange = { promptJournal = it },
                 label = { Text("Journal prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = promptIdea, onValueChange = { promptIdea = it },
-                label = { Text("Note polish prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = promptPrayer, onValueChange = { promptPrayer = it },
+                label = { Text("Prayer prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = promptAppointment, onValueChange = { promptAppointment = it },
                 label = { Text("Appointment extraction prompt") }, minLines = 3, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = promptMotivation, onValueChange = { promptMotivation = it },

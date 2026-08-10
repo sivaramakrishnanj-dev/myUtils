@@ -59,6 +59,18 @@ interface IdeaDao {
 }
 
 @Dao
+interface PrayerDao {
+    @Query("SELECT * FROM prayers WHERE deleted = 0 ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<Prayer>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(prayer: Prayer)
+
+    @Query("UPDATE prayers SET deleted = 1, updatedAt = :now WHERE id = :id")
+    suspend fun softDelete(id: String, now: Long = System.currentTimeMillis())
+}
+
+@Dao
 interface AppointmentDao {
     @Query("SELECT * FROM appointments WHERE epochDay = :epochDay AND deleted = 0 ORDER BY startMinutes")
     fun observeForDay(epochDay: Long): Flow<List<Appointment>>

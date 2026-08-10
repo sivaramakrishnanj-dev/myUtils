@@ -22,6 +22,7 @@ object PrefsKeys {
     val PROMPT_IDEA = stringPreferencesKey("prompt_idea")
     val PROMPT_APPOINTMENT = stringPreferencesKey("prompt_appointment")
     val PROMPT_MOTIVATION = stringPreferencesKey("prompt_motivation")
+    val PROMPT_PRAYER = stringPreferencesKey("prompt_prayer")
     val VOICE_ENGINE = stringPreferencesKey("voice_engine")
     val WHISPER_MODEL_FILE = stringPreferencesKey("whisper_model_file")
 }
@@ -90,6 +91,34 @@ object DefaultPrompts {
         explanation — output only the JSON object.
     """.trimIndent()
 
+    val PRAYER = """
+        You are a gentle spiritual companion. The person you are speaking to is a
+        devotee of Lord Rama, Sita Ma, Hanuman, and Shirdi Sai Baba. Your purpose is
+        to help them feel lighter — to remind them that God is carrying everything,
+        that they can trust completely and surrender their worry.
+
+        Structure every response in three parts, separated by blank lines:
+
+        1. A quote about trust in God and surrender. Draw from the wisdom of any
+           faith tradition across the world — the Bhagavad Gita, Ramayana, the words
+           of Sai Baba, the Psalms, the Gospels, Sufi masters, the Tao Te Ching,
+           Buddhist teachers, or any saint or sage. Name the source.
+
+        2. A short true story (3-5 sentences) of someone whose trust in God carried
+           them through difficulty. Choose from any religion or culture in the world —
+           saints, devotees, prophets, ordinary believers whose accounts are known.
+           Tell it warmly and simply.
+
+        3. A short reflection (3-5 sentences) speaking directly to the person. If they
+           have described a situation, speak to that situation specifically — name
+           what they are carrying and show how it can be placed in God's hands. If
+           they have not described anything, speak generally of surrender and being
+           held. End with reassurance that they are cared for and can rest.
+
+        Write in warm, simple, unhurried prose. No headings, no bullet points, no
+        numbered labels — just the three parts flowing one after another.
+    """.trimIndent()
+
     val MOTIVATION = """
         You are a supportive habit coach. You will receive a habit's name and its real
         statistics (current streak, longest streak, history of past streak lengths,
@@ -114,6 +143,7 @@ data class AppConfig(
     val promptIdea: String = DefaultPrompts.IDEA,
     val promptAppointment: String = DefaultPrompts.APPOINTMENT,
     val promptMotivation: String = DefaultPrompts.MOTIVATION,
+    val promptPrayer: String = DefaultPrompts.PRAYER,
     val voiceEngine: VoiceEngine = VoiceEngine.SYSTEM,
     val whisperModelFile: String = "",
 ) {
@@ -137,6 +167,7 @@ class AppSettings(private val context: Context) {
             promptIdea = prefs[PrefsKeys.PROMPT_IDEA] ?: DefaultPrompts.IDEA,
             promptAppointment = prefs[PrefsKeys.PROMPT_APPOINTMENT] ?: DefaultPrompts.APPOINTMENT,
             promptMotivation = prefs[PrefsKeys.PROMPT_MOTIVATION] ?: DefaultPrompts.MOTIVATION,
+            promptPrayer = prefs[PrefsKeys.PROMPT_PRAYER] ?: DefaultPrompts.PRAYER,
             voiceEngine = prefs[PrefsKeys.VOICE_ENGINE]?.let {
                 runCatching { VoiceEngine.valueOf(it) }.getOrNull()
             } ?: VoiceEngine.SYSTEM,
@@ -154,6 +185,7 @@ class AppSettings(private val context: Context) {
             prefs[PrefsKeys.PROMPT_IDEA] = config.promptIdea
             prefs[PrefsKeys.PROMPT_APPOINTMENT] = config.promptAppointment
             prefs[PrefsKeys.PROMPT_MOTIVATION] = config.promptMotivation
+            prefs[PrefsKeys.PROMPT_PRAYER] = config.promptPrayer
             prefs[PrefsKeys.VOICE_ENGINE] = config.voiceEngine.name
             prefs[PrefsKeys.WHISPER_MODEL_FILE] = config.whisperModelFile
         }

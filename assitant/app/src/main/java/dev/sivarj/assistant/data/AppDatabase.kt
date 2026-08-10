@@ -16,8 +16,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         Habit::class,
         HabitCheckin::class,
         Appointment::class,
+        Prayer::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -27,6 +28,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ideaDao(): IdeaDao
     abstract fun habitDao(): HabitDao
     abstract fun appointmentDao(): AppointmentDao
+    abstract fun prayerDao(): PrayerDao
 
     companion object {
         /** v2 adds the appointments table; existing data must survive. */
@@ -61,9 +63,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v5 adds the prayers table. */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `prayers` (
+                        `id` TEXT NOT NULL, `situation` TEXT NOT NULL,
+                        `content` TEXT NOT NULL, `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL, `deleted` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "assistant.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
     }
 }

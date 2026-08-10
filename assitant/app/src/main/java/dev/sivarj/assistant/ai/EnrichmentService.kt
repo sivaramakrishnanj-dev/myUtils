@@ -38,6 +38,25 @@ class EnrichmentService(private val context: Context) {
         }
 
     /**
+     * Generates a prayer/reflection. [situation] may be blank for an
+     * unprompted one.
+     */
+    suspend fun pray(situation: String): EnrichResult =
+        withContext(Dispatchers.IO) {
+            val config = settings.config.first()
+            val provider = AnthropicProvider(config)
+            if (!provider.isConfigured) {
+                return@withContext EnrichResult.Failure("API key not configured — go to Settings")
+            }
+            val userText = if (situation.isBlank()) {
+                "Please give me a prayer for trust and surrender right now."
+            } else {
+                "This is what I am carrying right now:\n\n$situation"
+            }
+            provider.complete(config.promptPrayer, userText)
+        }
+
+    /**
      * Proposes a short title for already-polished note text. Kept as its own
      * call with a fixed prompt so titles work no matter how the user has
      * customized their note-polish prompt.

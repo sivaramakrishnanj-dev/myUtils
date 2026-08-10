@@ -11,6 +11,7 @@ import dev.sivarj.assistant.data.Habit
 import dev.sivarj.assistant.data.HabitCheckin
 import dev.sivarj.assistant.data.Idea
 import dev.sivarj.assistant.data.JournalEntry
+import dev.sivarj.assistant.data.Prayer
 import dev.sivarj.assistant.data.Todo
 import dev.sivarj.assistant.data.TodoStatus
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +66,12 @@ data class BackupCheckin(
 data class BackupCategory(
     val id: String, val name: String, val type: String,
     val parentId: String? = null, val updatedAt: Long, val deleted: Boolean = false,
+)
+
+@Serializable
+data class BackupPrayer(
+    val id: String, val situation: String = "", val content: String,
+    val createdAt: Long, val updatedAt: Long, val deleted: Boolean = false,
 )
 
 @Serializable
@@ -151,6 +158,15 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
                 BackupCategory(c.id, c.name, c.type.name, c.parentId, c.updatedAt, c.deleted)
             }).toByteArray())
             zip.closeEntry()
+
+            // Prayers
+            val prayers = db.prayerDao().observeAll().first()
+            zip.putNextEntry(ZipEntry("prayers.json"))
+            zip.write(json.encodeToString(prayers.map { p ->
+                BackupPrayer(p.id, p.situation, p.content, p.createdAt, p.updatedAt, p.deleted)
+            }).toByteArray())
+            zip.closeEntry()
+            count += prayers.size
 
             // Appointments
             val appts = db.appointmentDao().observeAll().first()
@@ -247,6 +263,17 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
                     id = c.id, habitId = c.habitId, epochDay = c.epochDay, updatedAt = c.updatedAt,
                 ))
             }
+        }
+
+        entries["prayers.json"]?.let { bytes ->
+            val items = json.decodeFromString<List<BackupPrayer>>(String(bytes))
+            items.forEach { p ->
+                db.prayerDao().upsert(Prayer(
+                    id = p.id, situation = p.situation, content = p.content,
+                    createdAt = p.createdAt, updatedAt = p.updatedAt, deleted = p.deleted,
+                ))
+            }
+            count += items.size
         }
 
         entries["appointments.json"]?.let { bytes ->

@@ -5,7 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Checklist
-import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -23,8 +23,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.sivarj.assistant.ui.day.DayScreen
 import dev.sivarj.assistant.ui.habits.HabitsScreen
-import dev.sivarj.assistant.ui.ideas.IdeasScreen
 import dev.sivarj.assistant.ui.journal.JournalScreen
+import dev.sivarj.assistant.ui.prayer.PrayerScreen
 import dev.sivarj.assistant.ui.settings.SettingsScreen
 import dev.sivarj.assistant.ui.todos.TodosScreen
 
@@ -34,7 +34,7 @@ private val tabs = listOf(
     Tab("day", "Day", Icons.Default.CalendarToday),
     Tab("todos", "Todos", Icons.Default.Checklist),
     Tab("journal", "Journal", Icons.AutoMirrored.Filled.MenuBook),
-    Tab("ideas", "Notes", Icons.Default.Notes),
+    Tab("prayer", "Prayer", Icons.Default.SelfImprovement),
     Tab("habits", "Habits", Icons.Default.LocalFireDepartment),
     Tab("settings", "Settings", Icons.Default.Settings),
 )
@@ -73,7 +73,7 @@ fun AssistantAppRoot() {
             composable("day") { DayScreen() }
             composable("todos") { TodosScreen() }
             composable("journal") { JournalScreen() }
-            composable("ideas") { IdeasScreen() }
+            composable("prayer") { PrayerScreen() }
             composable("habits") { HabitsScreen() }
             composable("settings") { SettingsScreen() }
         }

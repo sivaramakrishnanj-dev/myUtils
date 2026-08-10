@@ -88,6 +88,21 @@ data class Idea(
     val deleted: Boolean = false,
 )
 
+/**
+ * A saved prayer/reflection generated for the user — optionally in response to
+ * a situation they described.
+ */
+@Entity(tableName = "prayers")
+data class Prayer(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    /** What the user was facing, blank for an unprompted prayer. */
+    val situation: String = "",
+    val content: String,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deleted: Boolean = false,
+)
+
 @Entity(tableName = "habits")
 data class Habit(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
