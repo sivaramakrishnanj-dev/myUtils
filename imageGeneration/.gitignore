@@ -1,0 +1,13 @@
+# The repo-root .gitignore already covers target/, *.jar, *.class, IDE files and .DS_Store.
+# Everything below is specific to imagegen.
+
+# Generated images and their sidecars. These are outputs, often multi-megabyte,
+# and land next to their inputs wherever the tool is run.
+out_*
+
+# Never commit an API key. The real config lives at ~/.config/imagegen/config.json;
+# this guards against a stray copy inside the repo.
+config.json
+
+# Raw API dumps from --debug-dump-response contain base64 image payloads.
+*response*.json

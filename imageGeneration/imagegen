@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Thin launcher for imagegen-cli. Safe to symlink onto PATH:
+#   ln -s "$PWD/imagegen" ~/bin/imagegen
+set -euo pipefail
+
+# Resolve this script through any symlinks so the jar is found relative to the repo.
+source="${BASH_SOURCE[0]}"
+while [ -L "$source" ]; do
+  dir="$(cd -P "$(dirname "$source")" && pwd)"
+  source="$(readlink "$source")"
+  [[ $source != /* ]] && source="$dir/$source"
+done
+here="$(cd -P "$(dirname "$source")" && pwd)"
+
+jar="${IMAGEGEN_JAR:-$here/target/imagegen-cli.jar}"
+
+if [ ! -f "$jar" ]; then
+  echo "[imagegen] ERROR jar not found at $jar" >&2
+  echo "[imagegen] Build it first:  cd $here && mvn -q clean package" >&2
+  exit 6
+fi
+
+exec java -jar "$jar" "$@"
