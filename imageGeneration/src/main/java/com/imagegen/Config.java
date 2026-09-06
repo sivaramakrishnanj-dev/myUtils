@@ -20,7 +20,13 @@ public final class Config {
 
     public static final String DEFAULT_MODEL = "gemini-3.1-flash-image";
     public static final String DEFAULT_RESOLUTION = "1K";
-    public static final String DEFAULT_MIME_TYPE = "image/png";
+    /**
+     * JPEG, because the default model rejects PNG outright:
+     * "The value 'image/png' is not supported for 'response_format.mime_type'."
+     * Models differ here, so an unset mime type is also auto-corrected from the
+     * API's own error - see {@link GeminiImageClient}.
+     */
+    public static final String DEFAULT_MIME_TYPE = "image/jpeg";
     public static final int DEFAULT_TIMEOUT_SECONDS = 180;
     public static final int DEFAULT_RETRIES = 2;
     public static final int MAX_COUNT = 8;
@@ -42,6 +48,8 @@ public final class Config {
     public final String resolution;
     public final String aspectRatio;
     public final String mimeType;
+    /** True when --mime was passed explicitly, which suppresses auto-correction. */
+    public final boolean mimeTypeExplicit;
     public final String thinkingLevel;
     public final int timeoutSeconds;
     public final int retries;
@@ -50,14 +58,15 @@ public final class Config {
     public final boolean configPresent;
 
     private Config(String apiKey, String apiKeySource, String model, String resolution, String aspectRatio,
-                   String mimeType, String thinkingLevel, int timeoutSeconds, int retries, Path outDir,
-                   Path configPath, boolean configPresent) {
+                   String mimeType, boolean mimeTypeExplicit, String thinkingLevel, int timeoutSeconds,
+                   int retries, Path outDir, Path configPath, boolean configPresent) {
         this.apiKey = apiKey;
         this.apiKeySource = apiKeySource;
         this.model = model;
         this.resolution = resolution;
         this.aspectRatio = aspectRatio;
         this.mimeType = mimeType;
+        this.mimeTypeExplicit = mimeTypeExplicit;
         this.thinkingLevel = thinkingLevel;
         this.timeoutSeconds = timeoutSeconds;
         this.retries = retries;
@@ -130,8 +139,8 @@ public final class Config {
 
         validate(model, resolution, aspectRatio, mimeType, thinkingLevel, retries, timeout);
 
-        return new Config(key, source, model, resolution, aspectRatio, mimeType, thinkingLevel,
-                timeout, retries, outDir, path, present);
+        return new Config(key, source, model, resolution, aspectRatio, mimeType,
+                options.mimeType != null, thinkingLevel, timeout, retries, outDir, path, present);
     }
 
     /** Fails with a CONFIG error if no key was found anywhere. */

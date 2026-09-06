@@ -33,7 +33,8 @@ class ConfigTest {
         Config config = Config.resolve(optionsWithIsolatedConfig(dir), null);
         assertEquals(Config.DEFAULT_MODEL, config.model);
         assertEquals("1K", config.resolution);
-        assertEquals("image/png", config.mimeType);
+        assertEquals("image/jpeg", config.mimeType);
+        assertFalse(config.mimeTypeExplicit);
         assertEquals(Config.DEFAULT_TIMEOUT_SECONDS, config.timeoutSeconds);
         assertEquals(Config.DEFAULT_RETRIES, config.retries);
         assertNull(config.aspectRatio);

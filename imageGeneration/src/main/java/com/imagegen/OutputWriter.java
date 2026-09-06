@@ -171,13 +171,13 @@ public final class OutputWriter {
 
     /** Builds the sidecar document for an output about to be written. */
     public static ObjectNode metadata(Config config, String command, String prompt,
-                                     String interactionId, List<Path> sourceImages) {
+                                     String interactionId, List<Path> sourceImages, String mimeType) {
         ObjectNode node = MAPPER.createObjectNode();
         node.put("command", command);
         node.put("prompt", prompt);
         node.put("model", config.model);
         node.put("resolution", config.resolution);
-        node.put("mimeType", config.mimeType);
+        node.put("mimeType", mimeType);
         if (config.aspectRatio != null) {
             node.put("aspectRatio", config.aspectRatio);
         }

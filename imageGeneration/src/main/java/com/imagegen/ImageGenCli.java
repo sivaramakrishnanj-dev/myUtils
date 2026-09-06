@@ -150,6 +150,7 @@ public final class ImageGenCli {
         JsonNode usage = null;
         int thoughtImages = 0;
         long totalLatency = 0;
+        String effectiveMimeType = config.mimeType;
 
         for (int call = 1; call <= count; call++) {
             Log.info("Calling " + config.model + " (" + config.resolution + ")"
@@ -157,6 +158,7 @@ public final class ImageGenCli {
 
             GeminiImageClient.Response response = client.create(options.prompt, inputs, previousInteractionId);
             totalLatency += response.latencyMs();
+            effectiveMimeType = response.mimeType();
             dumpIfRequested(options, response.body(), call, count);
 
             ResponseParser.Parsed parsed = ResponseParser.parse(response.body());
@@ -181,9 +183,9 @@ public final class ImageGenCli {
 
             for (ResponseParser.Image image : parsed.images()) {
                 byte[] bytes = decode(image.base64());
+                String mimeType = image.mimeType() != null ? image.mimeType() : effectiveMimeType;
                 ObjectNode metadata = OutputWriter.metadata(config, options.command, options.prompt,
-                        parsed.interactionId(), sourcePaths);
-                String mimeType = image.mimeType() != null ? image.mimeType() : config.mimeType;
+                        parsed.interactionId(), sourcePaths, mimeType);
                 OutputWriter.Written written = OutputWriter.write(outDir, base, mimeType, bytes, metadata);
                 Log.info("Wrote " + written.image() + " (" + humanBytes(written.bytes()) + ")");
 
@@ -212,7 +214,11 @@ public final class ImageGenCli {
         if (config.aspectRatio != null) {
             result.put("aspectRatio", config.aspectRatio);
         }
-        result.put("mimeType", config.mimeType);
+        result.put("mimeType", effectiveMimeType);
+        if (!effectiveMimeType.equals(config.mimeType)) {
+            result.put("mimeTypeRequested", config.mimeType);
+            result.put("mimeTypeAutoCorrected", true);
+        }
         if (config.thinkingLevel != null) {
             result.put("thinkingLevel", config.thinkingLevel);
         }

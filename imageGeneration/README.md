@@ -38,7 +38,7 @@ Then paste your [Gemini API key](https://aistudio.google.com/apikey) into `apiKe
   "apiKey": "AIza...",
   "model": "gemini-3.1-flash-image",
   "resolution": "1K",
-  "mimeType": "image/png",
+  "mimeType": "image/jpeg",
   "aspectRatio": null,
   "thinkingLevel": null,
   "outDir": null,
@@ -72,21 +72,21 @@ Generate from a prompt — lands in the current directory:
 
 ```bash
 imagegen generate -p "a lighthouse at dusk, long exposure" -r 2K -a 16:9
-# → ./out_001_a-lighthouse-at-dusk-long-exposure.png
+# → ./out_001_a-lighthouse-at-dusk-long-exposure.jpg
 ```
 
 Edit an existing image — lands beside the input:
 
 ```bash
 imagegen edit -p "make the sky stormy" -i ~/pics/photo.jpg
-# → ~/pics/out_001_photo.png
+# → ~/pics/out_001_photo.jpg
 ```
 
 Refine what you just made, without re-uploading it:
 
 ```bash
-imagegen edit -p "now add rain" --continue-from ~/pics/out_001_photo.png
-# → ~/pics/out_002_photo.png
+imagegen edit -p "now add rain" --continue-from ~/pics/out_001_photo.jpg
+# → ~/pics/out_002_photo.jpg
 ```
 
 Check before you spend:
@@ -119,15 +119,32 @@ imagegen generate --prompt-file ./prompt.txt -r 4K --thinking high
 - `<seq>` is the highest existing `out_<n>_*` in the target directory plus one,
   zero-padded to 3. Numbering is derived by scanning, so there's no counter file to
   drift, and moving files between folders stays safe.
-- `<ext>` follows `--mime`, **not** the input. Editing `photo.jpg` with the default
-  PNG output gives `out_001_photo.png`.
+- `<ext>` follows the output type, **not** the input. Editing `photo.png` with the
+  default JPEG output gives `out_001_photo.jpg`.
 - An existing `out_<n>_` prefix is stripped from the base, so editing an output gives
-  `out_002_photo.png` rather than `out_002_out_001_photo.png`.
+  `out_002_photo.jpg` rather than `out_002_out_001_photo.jpg`.
 
 Each image gets a sidecar `out_<seq>_<base>.json` holding the prompt, model,
 settings and `interactionId`. That's what `--continue-from` reads.
 
 Override the directory anywhere with `-o/--out-dir` (created if missing).
+
+### A note on output type
+
+Models disagree on which output types they accept — `gemini-3.1-flash-image` rejects
+PNG outright:
+
+```
+The value 'image/png' is not supported for 'response_format.mime_type'.
+Supported values: 'image/jpeg'.
+```
+
+So the default is `image/jpeg`. If you leave `--mime` unset and a model rejects the
+type anyway, the tool reads the accepted type out of the API's own error and retries
+once, warning on stderr; the result JSON then carries `mimeTypeRequested` and
+`mimeTypeAutoCorrected` alongside the effective `mimeType`. If you *do* pass `--mime`
+explicitly, a rejection is reported rather than silently overridden — you asked for a
+specific type, so you get told it isn't available.
 
 ## Options
 
@@ -140,7 +157,7 @@ Override the directory anywhere with `-o/--out-dir` (created if missing).
 | `-m, --model <id>` | `gemini-3.1-flash-image` | `imagegen models` lists them |
 | `-r, --resolution` | `1K` | `512px` `1K` `2K` `4K` — uppercase K required |
 | `-a, --aspect-ratio` | model's choice | `1:1 3:2 2:3 3:4 4:3 4:5 5:4 9:16 16:9 21:9` |
-| `--mime` | `image/png` | or `image/jpeg` |
+| `--mime` | `image/jpeg` | or `image/png`; support varies by model — see note below |
 | `--thinking` | `minimal` | or `high` — slower, better on hard prompts |
 | `-n, --count <int>` | 1 | N separate API calls; capped at 8 |
 | `--continue-from <path>` | — | Chain from a previous output |
@@ -185,15 +202,15 @@ Success payload:
   "command": "edit",
   "model": "gemini-3.1-flash-image",
   "resolution": "1K",
-  "mimeType": "image/png",
+  "mimeType": "image/jpeg",
   "prompt": "make the sky stormy",
   "sourceImages": ["/Users/me/pics/photo.jpg"],
   "outputs": [
     {
-      "path": "/Users/me/pics/out_001_photo.png",
+      "path": "/Users/me/pics/out_001_photo.jpg",
       "bytes": 1840233, "seq": 1,
       "sidecar": "/Users/me/pics/out_001_photo.json",
-      "mimeType": "image/png", "width": 1024, "height": 1024
+      "mimeType": "image/jpeg", "width": 1024, "height": 1024
     }
   ],
   "interactionId": "int_abc123",

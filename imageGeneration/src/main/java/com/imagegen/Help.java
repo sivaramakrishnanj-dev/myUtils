@@ -31,7 +31,9 @@ public final class Help {
               -m, --model <id>           Default: %s
               -r, --resolution <size>    512px | 1K | 2K | 4K. Default: %s. Uppercase K required.
               -a, --aspect-ratio <w:h>   1:1 3:2 2:3 3:4 4:3 4:5 5:4 9:16 16:9 21:9. Default: model's choice.
-                  --mime <type>          image/png (default) or image/jpeg.
+                  --mime <type>          image/jpeg (default) or image/png. Models differ on what
+                                         they accept; if unset, a rejection is auto-corrected once
+                                         using the type the API says it supports.
                   --thinking <level>     minimal (default) or high. Higher = slower, better on hard prompts.
               -n, --count <int>          Make N images (N separate API calls). Default 1, max %d.
                   --continue-from <path> Refine a previous output; inherits its settings and
@@ -103,7 +105,9 @@ public final class Help {
               "model": "<model id>",
               "resolution": "1K",
               "aspectRatio": "16:9",          // omitted if unset
-              "mimeType": "image/png",
+              "mimeType": "image/jpeg",       // the type actually accepted
+              "mimeTypeRequested": "image/png",   // both only present if auto-corrected
+              "mimeTypeAutoCorrected": true,
               "prompt": "<prompt used>",
               "sourceImages": ["/abs/in.jpg"], // edit only
               "outputs": [
@@ -125,8 +129,8 @@ public final class Help {
             - edit:     out_<seq>_<inputFileNameWithoutExt>.<outExt>, beside the first input.
             - generate: out_<seq>_<prompt-slug>.<outExt>, in the current directory.
             - <seq> is the highest existing out_<n>_* in that directory, plus one, zero-padded to 3.
-            - The extension follows --mime, not the input: editing photo.jpg to PNG gives
-              out_001_photo.png.
+            - The extension follows the output type, not the input: editing photo.png with
+              the default JPEG output gives out_001_photo.jpg.
             - Each image gets a sidecar out_<seq>_<base>.json holding the prompt, model,
               settings and interactionId.
 
@@ -152,7 +156,10 @@ public final class Help {
               imagegen generate -p "an exploded isometric diagram of a bicycle hub" --thinking high
 
             ## Notes
-            - Default model %s; default resolution %s.
+            - Default model %s; default resolution %s; default output image/jpeg.
+            - Output MIME support varies by model (gemini-3.1-flash-image accepts only
+              image/jpeg). Leave --mime unset and a rejection is corrected automatically;
+              set it explicitly and a rejection is reported instead.
             - -n N issues N separate API calls (the API has no batch image-count parameter).
             - 512px is only supported on the flash image models; flash-lite supports 1K only.
             - All generated images carry Google's SynthID watermark.

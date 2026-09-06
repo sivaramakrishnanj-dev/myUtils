@@ -90,17 +90,22 @@ Every error JSON has a `hint` field naming the fix. Read it before improvising.
    - `-a 16:9`, `-a 9:16`, `-a 1:1` — the user named a shape or a use (banner, phone
      wallpaper, avatar).
 7. **Resolution strings are case-sensitive.** `1K`, not `1k`.
-8. **Iterate with `--continue-from`, not by re-sending the file.** It chains through
+8. **Don't pass `--mime` unless the user asks for a specific format.** Output defaults
+   to JPEG because `gemini-3.1-flash-image` rejects PNG outright. Left unset, a
+   rejection is auto-corrected from the API's own error; setting it explicitly turns
+   that recovery off. If the user needs PNG, it will only work on a model that accepts
+   it — say so rather than retrying blindly.
+9. **Iterate with `--continue-from`, not by re-sending the file.** It chains through
    the API's own interaction history, so the model keeps full context of the image it
    already made.
-9. **Tell the user about the watermark** if they ask about provenance or plan to
-   publish: every output carries Google's invisible SynthID watermark.
+10. **Tell the user about the watermark** if they ask about provenance or plan to
+    publish: every output carries Google's invisible SynthID watermark.
 
 ## Where files land
 
 `out_<seq>_<base>.<ext>` — `<seq>` auto-increments per directory.
 
-- `edit` writes beside the input: `~/pics/photo.jpg` → `~/pics/out_001_photo.png`
+- `edit` writes beside the input: `~/pics/photo.jpg` → `~/pics/out_001_photo.jpg`
 - `generate` writes to the current directory using a slug of the prompt
 - `-o <dir>` overrides both; the directory is created if missing
 - The extension follows the output MIME type, not the input
@@ -116,10 +121,10 @@ New asset, then refine:
 ```bash
 imagegen generate -p "a minimal line-art icon of a paper plane, single weight stroke, \
 centred, generous margin" -a 1:1 -o ./assets
-# → ./assets/out_001_a-minimal-line-art-icon-of-a-paper.png
+# → ./assets/out_001_a-minimal-line-art-icon-of-a-paper.jpg
 imagegen edit -p "make the stroke noticeably thicker" \
-  --continue-from ./assets/out_001_a-minimal-line-art-icon-of-a-paper.png
-# → ./assets/out_002_a-minimal-line-art-icon-of-a-paper.png
+  --continue-from ./assets/out_001_a-minimal-line-art-icon-of-a-paper.jpg
+# → ./assets/out_002_a-minimal-line-art-icon-of-a-paper.jpg
 ```
 
 Retouch a user's photo in place:

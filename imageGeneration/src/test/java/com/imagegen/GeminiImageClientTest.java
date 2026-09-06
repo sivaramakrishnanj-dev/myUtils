@@ -10,6 +10,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Pins the outgoing request against the documented REST schema. */
@@ -47,7 +48,44 @@ class GeminiImageClientTest {
         assertEquals("a red bicycle", body.path("input").get(0).path("text").asText());
         assertEquals("image", body.path("response_format").path("type").asText());
         assertEquals("1K", body.path("response_format").path("image_size").asText());
-        assertEquals("image/png", body.path("response_format").path("mime_type").asText());
+        assertEquals("image/jpeg", body.path("response_format").path("mime_type").asText());
+    }
+
+    @Test
+    void explicitMimeIsSentAndMarkedAsDeliberate(@TempDir Path dir) {
+        Config config = config(dir, "--mime", "image/png");
+        assertTrue(config.mimeTypeExplicit);
+        assertEquals("image/png",
+                payload(config, "x", List.of(), null).path("response_format").path("mime_type").asText());
+    }
+
+    @Test
+    void unsetMimeIsNotMarkedExplicitSoItCanBeAutoCorrected(@TempDir Path dir) {
+        assertFalse(config(dir).mimeTypeExplicit);
+    }
+
+    @Test
+    void supportedMimeIsReadBackFromTheApisOwnRejection() {
+        String message = "The value 'image/png' is not supported for 'response_format.mime_type'. "
+                + "Supported values: 'image/jpeg'.";
+        assertEquals("image/jpeg", GeminiImageClient.supportedMimeFrom(message));
+    }
+
+    @Test
+    void supportedMimePicksTheFirstImageTypeWhenSeveralAreOffered() {
+        String message = "The value 'image/gif' is not supported for 'response_format.mime_type'. "
+                + "Supported values: 'image/jpeg', 'image/png'.";
+        assertEquals("image/jpeg", GeminiImageClient.supportedMimeFrom(message));
+    }
+
+    @Test
+    void unrelatedRejectionsAreNotMistakenForMimeProblems() {
+        assertNull(GeminiImageClient.supportedMimeFrom(
+                "The value '8K' is not supported for 'response_format.image_size'. Supported values: '1K'."));
+        assertNull(GeminiImageClient.supportedMimeFrom("Invalid argument."));
+        assertNull(GeminiImageClient.supportedMimeFrom(null));
+        assertNull(GeminiImageClient.supportedMimeFrom(
+                "Bad 'response_format.mime_type' but no list of alternatives"));
     }
 
     @Test
@@ -82,6 +120,36 @@ class GeminiImageClientTest {
         assertEquals("image/jpeg", first.path("mime_type").asText());
         assertEquals("QUJD", first.path("data").asText());
         assertEquals("REVG", body.path("input").get(2).path("data").asText());
+    }
+
+    @Test
+    void zeroQuotaIsDistinguishedFromOrdinaryRateLimiting() {
+        String noAllowance = "Quota exceeded for metric: generate_content_free_tier_requests, "
+                + "limit: 0, model: gemini-3.1-flash-image";
+        assertTrue(GeminiImageClient.hasZeroQuota(noAllowance));
+
+        assertFalse(GeminiImageClient.hasZeroQuota("Quota exceeded, limit: 60, model: x"));
+        assertFalse(GeminiImageClient.hasZeroQuota("Quota exceeded, limit: 1000, model: x"));
+        assertFalse(GeminiImageClient.hasZeroQuota("slow down"));
+        assertFalse(GeminiImageClient.hasZeroQuota(null));
+    }
+
+    @Test
+    void zeroQuotaIsNotConfusedByADecimalLimit() {
+        assertFalse(GeminiImageClient.hasZeroQuota("limit: 0.5 requests per second"));
+        assertFalse(GeminiImageClient.hasZeroQuota("limit: 05"));
+    }
+
+    @Test
+    void theServersOwnRetryDelayIsRead() {
+        assertEquals(17850, GeminiImageClient.suggestedRetryDelayMs("Please retry in 17.850291661s."));
+        assertEquals(3000, GeminiImageClient.suggestedRetryDelayMs("Please retry in 3s."));
+    }
+
+    @Test
+    void anAbsentRetryDelayFallsBackToOurOwnBackoff() {
+        assertEquals(0, GeminiImageClient.suggestedRetryDelayMs("Rate limited."));
+        assertEquals(0, GeminiImageClient.suggestedRetryDelayMs(null));
     }
 
     @Test
